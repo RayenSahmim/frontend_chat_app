@@ -17,7 +17,7 @@ const LoginPage = () => {
           credentials: 'include', // Important to include credentials (cookies)
         });
         if (response.ok) {
-          navigate('/root'); // Redirect if session exists
+          navigate('/root/rooms'); // Redirect if session exists
         }
       } catch (err) {
         console.error('Error checking session:', err);
