@@ -1,7 +1,7 @@
 import { Route, Routes, Navigate } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
-import Rootpage from './pages/Rootpage';
+import ChatPage from './pages/ChatPage';
 import RoomsPage from './pages/RoomsPage';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -47,7 +47,7 @@ const App = () => {
         {isAuthenticated ? (
           <>
             <Route path="/root/rooms" element={<RoomsPage />} />
-            <Route path="/root/rooms/:roomId" element={<Rootpage />} />
+            <Route path="/root/rooms/:roomId" element={<ChatPage />} />
           </>
         ) : (
           <Route path="*" element={<Navigate to="/login" />} />
