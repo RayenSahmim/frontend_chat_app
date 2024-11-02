@@ -150,7 +150,7 @@ const ChatApp = () => {
   const startCall = async () => {
     try {
       const permissionStatus = await navigator.permissions.query({
-        name: "microphone",
+        name: "microphone" as PermissionName,
       });
       if (permissionStatus.state !== "granted") {
         console.log("Microphone permissions not granted.");
