@@ -1,9 +1,11 @@
-import { Spin, Card, Input, Button } from "antd";
-import React, { useState, useEffect, useRef } from "react";
+import { Card } from "antd";
+import { useState, useEffect, useRef } from "react";
 import io, { Socket } from "socket.io-client";
-import { PhoneFilled, PhoneOutlined, SendOutlined } from "@ant-design/icons";
-import { useNavigate, useParams } from "react-router-dom";
-import CallModal from "../components/Callmodal";
+import { useNavigate } from "react-router-dom";
+import CallControls from "../components/CallControls";
+import MessageList from "../components/MessageList";
+import ChatInput from "../components/ChatInput";
+import IncomingCallModal from "../components/IncomingCallModal";
 
 let socket: Socket;
 
@@ -13,7 +15,7 @@ interface ChatMessage {
   timestamp: Date;
 }
 
-const ChatApp = () => {
+const ChatApp = ({ roomId }: { roomId: string }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [message, setMessage] = useState("");
   const [username, setUsername] = useState("");
@@ -22,163 +24,121 @@ const ChatApp = () => {
   const [isCalling, setIsCalling] = useState(false);
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
   const localStream = useRef<MediaStream | null>(null);
+  const localVideoRef = useRef<HTMLVideoElement | null>(null); // Add a reference for local video
   const peerConnection = useRef<RTCPeerConnection | null>(null);
   const [callerName, setCallerName] = useState("");
   const [callEnded, setCallEnded] = useState(false);
+  const [isRinging, setIsRinging] = useState(false);
   const navigate = useNavigate();
-  const { roomId } = useParams<{ roomId: string }>();
 
   useEffect(() => {
-    const initSocketConnection = async () => {
-      try {
-        console.log("Checking session...");
-        const res = await fetch("http://localhost:5000/api/check-session", {
-          credentials: "include",
-        });
-        const data = await res.json();
-
-        if (data.user) {
-          console.log("User found:", data.user.name);
-          setUsername(data.user.name);
-          setupSocket();
-        } else {
-          console.log("No user session found, navigating to login");
-          navigate("/login");
-        }
-      } catch (error) {
-        console.error("Session check error:", error);
-      }
-    };
-
-    const setupSocket = () => {
-      console.log("Setting up socket...");
-      socket = io("http://localhost:5000", { withCredentials: true });
-      socket.emit("joinRoom", { roomId });
-
-      socket.on("connect", () => console.log("Socket connected"));
-      socket.on("previousMessages", (msgs: ChatMessage[]) => {
-        console.log("Loading previous messages:", msgs);
-        setMessages(msgs);
-        setLoading(false);
-      });
-
-      socket.on("message", (data: ChatMessage) => {
-        console.log("New message received:", data);
-        setMessages((prev) => [...prev, data]);
-      });
-
-      socket.on("typing", (data: string) => {
-        console.log("User typing:", data);
-        setTyping(data);
-        setTimeout(() => setTyping(""), 2000);
-      });
-      socket.off("receiveCall");
-      socket.off("callAnswered");
-      socket.off("iceCandidate");
-      socket.off("callEnded");
-
-      socket.on("receiveCall", handleIncomingCall);
-      socket.on("callAnswered", handleAnswerReceived);
-      socket.on("iceCandidate", handleIceCandidate);
-      socket.on("callEnded", handleRemoteCallEnded);
-    };
-
     initSocketConnection();
 
     return () => {
-      if (socket) socket.disconnect();
+      socket.disconnect();
       cleanupMedia();
     };
   }, [roomId, navigate]);
 
-  const handleIncomingCall = async ({
-    offer,
-    caller,
-  }: {
-    offer: RTCSessionDescriptionInit;
-    caller: string;
-  }) => {
-    console.log("Incoming call offer received from:", caller);
-    setCallerName(caller);
-    setIsCalling(true);
-    setCallEnded(false);
-    
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    localStream.current = stream;
+  
 
-    peerConnection.current = createPeerConnection();
-    stream.getTracks().forEach((track) => {
-      console.log("Adding local track:", track);
-      peerConnection.current?.addTrack(track, stream);
+  const initSocketConnection = async () => {
+    try {
+      const res = await fetch("http://localhost:5000/api/check-session", { credentials: "include" });
+      const data = await res.json();
+      if (data.user) {
+        setUsername(data.user.name);
+        setupSocket();
+      } else {
+        navigate("/login");
+      }
+    } catch (error) {
+      console.error("Session check error:", error);
+    }
+  };
+
+  const setupSocket = () => {
+    socket = io("http://localhost:5000", { withCredentials: true });
+    socket.emit("joinRoom", { roomId });
+
+    socket.on("connect", () => console.log("Socket connected"));
+    socket.on("previousMessages", (msgs: ChatMessage[]) => {
+      setMessages(msgs);
+      setLoading(false);
     });
 
-    await peerConnection.current?.setRemoteDescription(
-      new RTCSessionDescription(offer)
-    );
+    socket.on("message", (data: ChatMessage) => setMessages((prev) => [...prev, data]));
+    socket.on('typing', (data: string) => {
+      setTyping(data);
+      setTimeout(() => setTyping(''), 2000); // Clear typing after 2 seconds
+    });    socket.on("ringing", ({ caller }) => {
+      setCallerName(caller);
+      setIsRinging(true);
+    });
+
+    socket.on("receiveCall", (data) => handleIncomingCall(data));
+    socket.on("callAnswered", handleAnswerReceived);
+    socket.on("iceCandidate", handleIceCandidate);
+    socket.on("callEnded", handleRemoteCallEnded);
+  };
+
+  const handleIncomingCall = ({ offer, caller }: { offer: RTCSessionDescriptionInit; caller: string }) => {
+    setCallerName(caller);
+    setIsRinging(true);
+    peerConnection.current = createPeerConnection();
+    peerConnection.current?.setRemoteDescription(new RTCSessionDescription(offer));
+  };
+
+  const acceptCall = async () => {
+    setIsRinging(false);
+    setIsCalling(true);
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+    localStream.current = stream;
+
+    if (localVideoRef.current) {
+      localVideoRef.current.srcObject = stream;
+    }
+
+    stream.getTracks().forEach((track) => peerConnection.current?.addTrack(track, stream));
+
     const answer = await peerConnection.current?.createAnswer();
     await peerConnection.current?.setLocalDescription(answer!);
-
-    console.log("Sending answer to caller");
     socket.emit("answerCall", { roomId, answer });
   };
 
-  const handleAnswerReceived = async ({
-    answer,
-  }: {
-    answer: RTCSessionDescriptionInit;
-  }) => {
-    console.log("Answer received from callee");
-    if (peerConnection.current?.signalingState === "have-local-offer") {
-      await peerConnection.current.setRemoteDescription(
-        new RTCSessionDescription(answer)
-      );
-      console.log("Remote description set for caller");
-    }
+  const declineCall = () => {
+    setIsRinging(false);
+    socket.emit("declineCall", { roomId });
+    endCall();
+  };
+
+  const handleAnswerReceived = async ({ answer }: { answer: RTCSessionDescriptionInit }) => {
+    await peerConnection.current?.setRemoteDescription(new RTCSessionDescription(answer));
   };
 
   const handleIceCandidate = async (candidate: RTCIceCandidate) => {
-    try {
-      console.log("Adding received ICE candidate:", candidate);
-      await peerConnection.current?.addIceCandidate(
-        new RTCIceCandidate(candidate)
-      );
-    } catch (error) {
-      console.error("Error adding ICE candidate:", error);
-    }
+    await peerConnection.current?.addIceCandidate(new RTCIceCandidate(candidate));
   };
 
   const startCall = async () => {
-    try {
-      const permissionStatus = await navigator.permissions.query({
-        name: "microphone" as PermissionName,
-      });
-      if (permissionStatus.state !== "granted") {
-        console.log("Microphone permissions not granted.");
-        return;
-      }
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true , video: true});
+    localStream.current = stream;
 
-      console.log("Starting call...");
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      localStream.current = stream;
-      console.log("Local audio tracks:", stream.getAudioTracks());
-
-      peerConnection.current = createPeerConnection();
-      stream.getTracks().forEach((track) =>
-        peerConnection.current?.addTrack(track, stream)
-      );
-
-      const offer = await peerConnection.current.createOffer();
-      await peerConnection.current.setLocalDescription(offer);
-      console.log("Sending call offer to recipient");
-      socket.emit("callUser", { roomId, offer });
-      setIsCalling(true);
-    } catch (error) {
-      console.error("Error starting call:", error);
+    if (localVideoRef.current) {
+      localVideoRef.current.srcObject = stream;
     }
+
+    peerConnection.current = createPeerConnection();
+
+    stream.getTracks().forEach((track) => peerConnection.current?.addTrack(track, stream));
+
+    const offer = await peerConnection.current.createOffer();
+    await peerConnection.current.setLocalDescription(offer);
+    socket.emit("callUser", { roomId, offer });
+    setIsCalling(true);
   };
 
   const createPeerConnection = () => {
-    console.log("Creating peer connection");
     const pc = new RTCPeerConnection({
       iceServers: [
         { urls: "stun:stun.l.google.com:19302" },
@@ -188,12 +148,11 @@ const ChatApp = () => {
 
     pc.onicecandidate = (event) => {
       if (event.candidate) {
-        console.log("Emitting ICE candidate:", event.candidate);
         socket.emit("iceCandidate", { roomId, candidate: event.candidate });
       }
     };
+
     pc.ontrack = (event) => {
-      console.log("Received remote stream:", event.streams[0]);
       if (event.streams && event.streams[0]) {
         setRemoteStream(event.streams[0]);
       }
@@ -221,7 +180,6 @@ const ChatApp = () => {
   };
 
   const handleRemoteCallEnded = () => {
-    console.log("Remote party ended the call");
     setIsCalling(false);
     setCallEnded(true);
     cleanupMedia();
@@ -233,108 +191,82 @@ const ChatApp = () => {
   };
 
   const cleanupMedia = () => {
-    console.log("Cleaning up media streams");
     peerConnection.current = null;
     localStream.current?.getTracks().forEach((track) => track.stop());
     localStream.current = null;
     setRemoteStream(null);
   };
+
   const handleMessageSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (message.trim()) {
       socket.emit("message", { roomId, msg: message });
-      setMessages((prev) => [
-        ...prev,
-        { user: username, message, timestamp: new Date() },
-      ]);
+      setMessages((prev) => [...prev, { user: username, message, timestamp: new Date() }]);
       setMessage("");
     }
   };
 
   const handleTyping = () => {
-    console.log("User typing...");
     socket.emit("typing", { roomId });
   };
 
+  {/*
   const logout = async () => {
-    try {
-      console.log("Logging out");
-      const response = await fetch("http://localhost:5000/api/logout", {
-        method: "POST",
-        credentials: "include",
-      });
-      if (response.ok) navigate("/login");
-    } catch (err) {
-      console.error("Error checking session:", err);
-    }
+    const response = await fetch("http://localhost:5000/api/logout", {
+      method: "POST",
+      credentials: "include",
+    });
+    if (response.ok) navigate("/login");
   };
+  */}
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-5">
-      <Card className="w-full max-w-4xl shadow-lg">
-        <h1 className="text-2xl font-bold text-center mb-6">Private Chat</h1>
-        <button
-          className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 mb-4 rounded"
-          onClick={logout}
-        >
-          Logout
-        </button>
-        <Button
-          onClick={isCalling ? endCall : startCall}
-          icon={isCalling ? <PhoneFilled /> : <PhoneOutlined />}
-        >
-          {isCalling ? "End Call" : "Call"}
-        </Button>
-        <CallModal
-          visible={isCalling}
-          onClose={endCall}
-          callerName={callerName || "Unknown"}
-          remoteStream={remoteStream}
-        />
-
-        <div className="chat-window bg-white p-4 overflow-y-auto rounded-md border border-gray-200 mb-4 h-[70vh] relative">
-          {loading ? (
-            <div className="flex justify-center items-center h-full">
-              <Spin size="large" />
-            </div>
-          ) : (
-            <div className="flex flex-col gap-2">
-              {messages.map((msg, index) => (
-                <div
-                  key={index}
-                  className={`mb-2 ${msg.user === username ? "text-right" : "text-left"}`}
-                >
-                  <div
-                    className={`inline-block p-2 rounded-lg max-w-[70%] break-words transition-all duration-300 ease-in-out ${
-                      msg.user === username ? "bg-blue-600 text-white ml-auto" : "bg-gray-200 text-black"
-                    }`}
-                  >
-                    <span className="font-semibold">{msg.user}: </span>
-                    <span>{msg.message}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-          {typing && <p className="text-gray-400 italic">{typing}</p>}
-        </div>
-        <form onSubmit={handleMessageSubmit} className="flex">
-          <Input
-            type="text"
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            placeholder="Type your message here..."
-            className="mr-2"
-            onKeyUp={handleTyping}
+    <div className="flex flex-col h-screen bg-gray-100 p-5">
+      <Card className="w-full h-full shadow-lg flex flex-col space-y-4 px-8 overflow-hidden">
+        {/* Header with Logout and Chat Title */}
+     
+  
+        {/* Call Controls */}
+        <div className="mb-4">
+          <CallControls
+            isCalling={isCalling}
+            startCall={startCall}
+            endCall={endCall}
+            callerName={callerName}
+            remoteStream={remoteStream}
+            localVideoRef={localVideoRef}
           />
-          <Button htmlType="submit" icon={<SendOutlined />} />
-        </form>
+        </div>
+        <IncomingCallModal
+          visible={isRinging}
+          callerName={callerName}
+          onAccept={acceptCall}
+          onDecline={declineCall}
+        />
+  
+        {/* Message List Area */}
+          <MessageList
+            messages={messages}
+            typing={typing}
+            username={username}
+            loading={loading}
+          />
+  
+        {/* Chat Input at the Bottom */}
+        <div className="border-t pt-10">
+          <ChatInput
+            message={message}
+            setMessage={setMessage}
+            handleMessageSubmit={handleMessageSubmit}
+            handleTyping={handleTyping}
+          />
+        </div>
       </Card>
     </div>
   );
+  
+  
+  
 };
-
-
-
 
 export default ChatApp;
