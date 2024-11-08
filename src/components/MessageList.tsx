@@ -27,7 +27,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, typing, username, l
   return (
     <div
     ref={chatContainerRef}
-    className="chat-window bg-white p-4 overflow-y-scroll rounded-md border border-gray-200 mb-4 h-[70vh] relative"
+    className="chat-window bg-white p-4 overflow-y-auto rounded-md  mb-4 flex-grow  relative"
   >
     {loading ? (
       <div className="flex justify-center items-center h-full">
@@ -38,7 +38,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, typing, username, l
         {messages.map((msg, index) => (
           <div key={index} className={`mb-2 ${msg.user === username ? "text-right" : "text-left"}`}>
             <div
-              className={`inline-block p-2 rounded-xl shadow-md max-w-[70%] ${
+              className={`inline-block p-2 rounded-xl shadow-md max-w-[70%] break-words ${
                 msg.user === username ? "bg-blue-600 text-white ml-auto" : "bg-gray-200 text-black"
               }`}
             >

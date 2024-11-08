@@ -11,7 +11,7 @@ interface IncomingCallModalProps {
 const IncomingCallModal: React.FC<IncomingCallModalProps> = ({ visible, callerName, onAccept, onDecline }) => (
   <Modal
     title="Incoming Call"
-    visible={visible}
+    open={visible}
     onCancel={onDecline}
     footer={[
       <Button key="decline" onClick={onDecline}>

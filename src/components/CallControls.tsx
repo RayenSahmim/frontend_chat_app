@@ -1,5 +1,5 @@
 import { Button } from "antd";
-import { PhoneFilled, PhoneOutlined } from "@ant-design/icons";
+import { PhoneFilled, PhoneOutlined,LogoutOutlined  } from "@ant-design/icons";
 import CallModal from "./Callmodal";
 
 interface CallControlsProps {
@@ -9,7 +9,10 @@ interface CallControlsProps {
   callerName: string;
   remoteStream: MediaStream | null;
   localVideoRef: React.RefObject<HTMLVideoElement>; // Add local video ref prop
+  logout: () => void;
 }
+
+
 
 const CallControls: React.FC<CallControlsProps> = ({
   isCalling,
@@ -18,8 +21,9 @@ const CallControls: React.FC<CallControlsProps> = ({
   callerName,
   remoteStream,
   localVideoRef,
+  logout,
 }) => (
-  <div className="flex items-center space-x-4">
+  <div className="flex items-center space-x-4 justify-end">
     {" "}
     <Button
       type="primary"
@@ -28,8 +32,21 @@ const CallControls: React.FC<CallControlsProps> = ({
       icon={isCalling ? <PhoneFilled /> : <PhoneOutlined />}
       className="flex items-center justify-center"
     >
+
       {" "}
       {isCalling ? "End Call" : "Call"}{" "}
+    </Button>{" "}
+
+    <Button
+      type="primary"
+      color="danger"
+      variant="outlined"
+      shape="round"
+      onClick={logout}
+      icon={<LogoutOutlined />}
+      className="flex items-center justify-center"
+    > 
+      Logout
     </Button>{" "}
     <CallModal
       visible={isCalling}

@@ -66,7 +66,7 @@ const App = () => {
       )}
 
       {/* Optional: Catch-all route for undefined paths */}
-      <Route path="*" element={<Navigate to={isAuthenticated ? "/root/rooms" : "/PageNotFound"} />} />
+      <Route path="*" element={<Navigate to={isAuthenticated ? "/root/rooms" : "/login"} />} />
     </Routes>
   );
 };

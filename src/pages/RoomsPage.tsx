@@ -68,8 +68,8 @@ const RoomsPage = () => {
   }
 
   return (
-    <div className="bg-gray-100 h-screen flex space-x-8 px-8">
-      <div className="w-1/3 max-h-full overflow-y-auto py-5">
+    <div className="bg-gray-100 h-screen flex pl-8">
+      <div className="w-1/4 max-h-full overflow-y-auto py-5">
         <Card className="shadow-lg h-full p-8">
           <h1 className="text-3xl font-bold mb-6 text-center">Your Chats</h1>
           {rooms.length === 0 ? (
@@ -99,7 +99,7 @@ const RoomsPage = () => {
           )}
         </Card>
       </div>
-      <div className="w-2/3 max-h-full overflow-y-auto">
+      <div className="w-3/4 max-h-full overflow-y-auto">
         {selectedRoomId ? (
           <ChatPage roomId={selectedRoomId} />
         ) : (
