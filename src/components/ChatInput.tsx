@@ -15,29 +15,28 @@ const ChatInput: React.FC<ChatInputProps> = ({
   handleMessageSubmit,
   handleTyping,
 }) => (
-<form
-  onSubmit={handleMessageSubmit}
-  className="flex items-center p-3 bg-white rounded-full shadow-md w-full sticky bottom-0 "
->
-  <Input
-    type="text"
-    value={message}
-    onChange={(e) => setMessage(e.target.value)}
-    placeholder="Type a message..."
-    className="flex-grow mr-3 rounded-full border-0 bg-gray-100 placeholder-gray-500 focus:ring-0"
-    onKeyUp={handleTyping}
-  />
-  <Button
-    type="primary"
-    htmlType="submit"
-    icon={<SendOutlined />}
-    className="text-white bg-blue-500 hover:bg-blue-600 rounded-full"
+  <form
+    onSubmit={handleMessageSubmit}
+    className="flex items-center bg-white border-t border-gray-300  shadow-lg w-full p-2 py-3 absolute bottom-0 left-0"
+    style={{ zIndex: 10 }}
   >
-    Send
-  </Button>
-</form>
-
-
+    <Input
+      type="text"
+      value={message}
+      onChange={(e) => setMessage(e.target.value)}
+      placeholder="Type a message..."
+      className="flex-grow mr-3 rounded-full border border-gray-300 px-8 py-2 placeholder-gray-500 focus:ring-blue-500 focus:border-blue-500"
+      onKeyUp={handleTyping}
+    />
+    <Button
+      type="primary"
+      htmlType="submit"
+      icon={<SendOutlined />}
+      className="text-white bg-blue-500 hover:bg-blue-600 rounded-full p-4"
+    >
+      Send
+    </Button>
+  </form>
 );
 
 export default ChatInput;

@@ -60,7 +60,7 @@ const SignupPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
+    <div className=" flex items-center justify-center p-4 mt-24 overflow-hidden">
       <form onSubmit={handleSubmit} className="flex flex-col gap-4 items-center w-full max-w-md">
         {/* Placeholder for logo */}
         <div>

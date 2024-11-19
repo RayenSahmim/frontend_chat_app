@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { message } from 'antd';
 import logo from '../../public/logo.png';
+import useAuthenticatedUser from '../hooks/useAuthenticatedUser';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -10,23 +11,12 @@ const LoginPage = () => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const checkSession = async () => {
-      try {
-        const response = await fetch('http://localhost:5000/api/check-session', {
-          credentials: 'include',
-        });
-        if (response.ok) {
-          navigate('/root/rooms');
-        }
-      } catch (err) {
-        console.error('Error checking session:', err);
-      }
-    };
 
-    checkSession();
-  }, [navigate]);
+  const { authenticatedUser, loading : authLoading, error : authError} = useAuthenticatedUser();
 
+  if(authenticatedUser) {
+    navigate('/root/rooms');
+  }
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setLoading(true);
@@ -44,7 +34,7 @@ const LoginPage = () => {
 
       if (response.ok) {
         message.success('Login successful!');
-        navigate('/root');
+        navigate('/root/rooms');
       } else {
         setError(data.message || 'An error occurred');
         message.error(data.message || 'An error occurred');
@@ -59,7 +49,7 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
+    <section className=" flex items-center justify-center p-4 mt-32">
       <form onSubmit={handleSubmit} className="flex flex-col gap-4 items-center w-full max-w-md">
         <div>
           <img src={logo} alt="RaySend Logo" className="h-24 w-36 mb-4" />
@@ -89,16 +79,16 @@ const LoginPage = () => {
             required
           />
         </div>
-        {error && <p className="text-red-500">{error}</p>}
+        {error || authError && <p className="text-red-500">{error}</p>}
         <button
           type="submit"
           className={`p-2 w-full bg-blue-500 text-white rounded mt-4 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
           disabled={loading}
         >
-          {loading ? 'Logging in...' : 'Login'}
+          {loading || authLoading ? 'Logging in...' : 'Login'}
         </button>
       </form>
-    </div>
+    </section>
   );
 };
 

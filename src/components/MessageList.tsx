@@ -27,7 +27,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, typing, username, l
   return (
     <div
     ref={chatContainerRef}
-    className="chat-window bg-white p-4 overflow-y-auto rounded-md  mb-4 flex-grow  relative"
+    className="chat-window bg-white p-4 overflow-y-auto rounded-md  mb-4 flex-grow  relative min-h-[75vh]"
   >
     {loading ? (
       <div className="flex justify-center items-center h-full">

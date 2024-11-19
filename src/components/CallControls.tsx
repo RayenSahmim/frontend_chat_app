@@ -1,84 +1,91 @@
-import React, { useState } from "react";
-import { Button, Space, Tooltip } from "antd";
+import { Button, Tooltip, Space } from "antd";
 import {
-  PhoneOutlined,
   PhoneFilled,
+  PhoneOutlined,
+  AudioMutedOutlined,
+  AudioOutlined,
   VideoCameraOutlined,
-  VideoCameraFilled,
-  StopOutlined,
+  VideoCameraAddOutlined,
 } from "@ant-design/icons";
 
 interface CallControlsProps {
   isCalling: boolean;
   startCall: () => void;
   endCall: () => void;
-  logout: () => void;
-  localVideoRef: React.RefObject<HTMLVideoElement>;
+  handleMuteAudio: () => void;
+  handleMuteVideo: () => void;
+  isAudioMuted: boolean;
+  isVideoMuted: boolean;
 }
 
 const CallControls: React.FC<CallControlsProps> = ({
   isCalling,
   startCall,
   endCall,
-  logout,
-  localVideoRef,
+  handleMuteAudio,
+  handleMuteVideo,
+  isAudioMuted,
+  isVideoMuted,
 }) => {
-  const [isMuted, setIsMuted] = useState(false);
-  const [videoEnabled, setVideoEnabled] = useState(true);
-
-  const toggleMute = () => {
-    setIsMuted(!isMuted);
-    if (localVideoRef.current?.srcObject) {
-      const audioTracks = (localVideoRef.current.srcObject as MediaStream).getAudioTracks();
-      audioTracks.forEach((track) => (track.enabled = !isMuted));
-    }
-  };
-
-  const toggleVideo = () => {
-    setVideoEnabled(!videoEnabled);
-    if (localVideoRef.current?.srcObject) {
-      const videoTracks = (localVideoRef.current.srcObject as MediaStream).getVideoTracks();
-      videoTracks.forEach((track) => (track.enabled = videoEnabled));
-    }
-  };
-
   return (
-    <Space className="flex justify-between w-full mb-3">
-      {isCalling ? (
-        <>
-          <Tooltip title="End Call">
-            <Button color="danger" shape="circle" icon={<StopOutlined />} onClick={endCall} />
-          </Tooltip>
-          <Tooltip title={isMuted ? "Unmute" : "Mute"}>
-            <Button
-              type="primary"
-              shape="circle"
-              icon={<PhoneOutlined />}
-              onClick={toggleMute}
-            />
-          </Tooltip>
-          <Tooltip title={videoEnabled ? "Turn Video Off" : "Turn Video On"}>
-            <Button
-              type="primary"
-              shape="circle"
-              icon={videoEnabled ? <VideoCameraFilled /> : <VideoCameraOutlined />}
-              onClick={toggleVideo}
-            />
-          </Tooltip>
-        </>
-      ) : (
-        <Tooltip title="Start Call">
-          <Button type="primary" icon={<PhoneFilled />} onClick={startCall}>
-            Start Call
-          </Button>
+    <div className="flex items-center space-x-2 justify-end">
+      <Space>
+        {/* Start/End Call Button */}
+        <Tooltip title={isCalling ? "End Call" : "Start Call"}>
+          <Button
+            shape="circle"
+            icon={isCalling ? <PhoneFilled /> : <PhoneOutlined />}
+            onClick={isCalling ? endCall : startCall}
+            style={{
+              backgroundColor: isCalling ? "#ff4d4f" : "#1890ff",
+              borderColor: isCalling ? "#ff4d4f" : "#1890ff",
+              color: "white",
+              transition: "background-color 0.3s, transform 0.2s, box-shadow 0.2s",
+              boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+            }}
+            className="flex items-center justify-center hover:scale-105 active:scale-95 hover:shadow-lg"
+          />
         </Tooltip>
-      )}
-      <Tooltip title="Logout">
-        <Button type="default" onClick={logout}>
-          Logout
-        </Button>
-      </Tooltip>
-    </Space>
+          {isCalling && (
+            <>
+            <Tooltip title={isAudioMuted ? "Unmute Audio" : "Mute Audio"}>
+            <Button
+              shape="circle"
+              icon={isAudioMuted ? <AudioMutedOutlined /> : <AudioOutlined />}
+              onClick={handleMuteAudio}
+              style={{
+                backgroundColor: isAudioMuted ? "#ff6347" : "#1890ff",
+                borderColor: isAudioMuted ? "#ff6347" : "#1890ff",
+                color: "white",
+                transition: "background-color 0.3s, transform 0.2s, box-shadow 0.2s",
+                boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+              }}
+              className="flex items-center justify-center hover:scale-105 active:scale-95 hover:shadow-lg"
+            />
+          </Tooltip>
+  
+          <Tooltip title={isVideoMuted ? "Unmute Video" : "Mute Video"}>
+            <Button
+              shape="circle"
+              icon={isVideoMuted ? <VideoCameraAddOutlined /> : <VideoCameraOutlined />}
+              onClick={handleMuteVideo}
+              style={{
+                backgroundColor: isVideoMuted ? "#ff6347" : "#1890ff",
+                borderColor: isVideoMuted ? "#ff6347" : "#1890ff",
+                color: "white",
+                transition: "background-color 0.3s, transform 0.2s, box-shadow 0.2s",
+                boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+              }}
+              className="flex items-center justify-center hover:scale-105 active:scale-95 hover:shadow-lg"
+            />
+          </Tooltip>
+          </>
+          )}
+        
+
+ 
+      </Space>
+    </div>
   );
 };
 

@@ -1,9 +1,9 @@
-import { Route, Routes, Navigate } from 'react-router-dom';
-
+import { Route, Routes } from 'react-router-dom';
 
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {  LoginPage, PageNotFound, RoomsPage, SignupPage } from './pages';
+import {  LoginPage, PageNotFound, RoomsPage, SignupPage,ProfilePage ,HomePage} from './pages';
+import MainLayout from './layouts/mainLayout';
 
 const App = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -35,38 +35,21 @@ const App = () => {
     return <div>Loading...</div>; // Display a loading state until the session check is done
   }
 
+  
+
   return (
     <Routes>
-      <Route path="/PageNotFound" element={<PageNotFound />} />
-      {/* Public routes for unauthenticated users */}
-      {!isAuthenticated ? (
-        <>
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/signup" element={<SignupPage />} />
-        </>
-      ) : (
-        // Redirect to protected route if authenticated user tries to access login or signup
-        <>
-          <Route path="/login" element={<Navigate to="/root/rooms" />} />
-          <Route path="/signup" element={<Navigate to="/root/rooms" />} />
-        </>
-      )}
+      <Route path="/" element={<MainLayout children={<HomePage/>}/>} />
+      <Route path="/login" element={<MainLayout children={<LoginPage/>}/>} />
+      <Route path="/signup" element={<MainLayout children={<SignupPage/>}/>} />
+        
 
-      {/* Protected routes */}
-      {isAuthenticated ? (
-        <>
-          <Route path="/root/rooms" element={<RoomsPage />} />
-        </>
-      ) : (
-        // Redirect to login only for protected routes
-        <>
-        <Route path="/root//root/rooms" element={<Navigate to="/login" />} />
-        <Route path="/root/rooms/:roomId" element={<Navigate to="/login" />} />
-        </>
-      )}
+      
+      <Route path="/root/rooms" element={<RoomsPage />} />
+      <Route path="/root/Profile/:id" element={< ProfilePage/>} />
 
-      {/* Optional: Catch-all route for undefined paths */}
-      <Route path="*" element={<Navigate to={isAuthenticated ? "/root/rooms" : "/login"} />} />
+       <Route path="*" element={<MainLayout children={<PageNotFound/>}/>} />
+
     </Routes>
   );
 };

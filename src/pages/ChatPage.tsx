@@ -1,4 +1,4 @@
-import { Card } from "antd";
+import { Avatar, Card } from "antd";
 import { useState, useEffect, useRef, useCallback } from "react";
 import io, { Socket } from "socket.io-client";
 import { useNavigate } from "react-router-dom";
@@ -7,7 +7,9 @@ import MessageList from "../components/MessageList";
 import ChatInput from "../components/ChatInput";
 import IncomingCallModal from "../components/IncomingCallModal";
 import Videoscomponent from "../components/VideosComponets";
-
+import useAuthenticatedUser from "../hooks/useAuthenticatedUser";
+import { UserOutlined } from "@ant-design/icons";
+import useFriendData from "../hooks/useFriendData";
 let socket: Socket;
 
 interface ChatMessage {
@@ -16,13 +18,20 @@ interface ChatMessage {
   timestamp: Date;
 }
 
-
-
 const ChatApp = ({ roomId }: { roomId: string }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [message, setMessage] = useState("");
   const [username, setUsername] = useState("");
   const [typing, setTyping] = useState("");
+  const [isAudioMuted, setIsAudioMuted] = useState(false);
+  const [isVideoMuted, setIsVideoMuted] = useState(false);
+  const [userAudioStatuses, setUserAudioStatuses] = useState<
+    Record<string, boolean>
+  >({});
+  const [userVideoStatuses, setUserVideoStatuses] = useState<
+    Record<string, boolean>
+>({});
+
   const [loading, setLoading] = useState(true);
   const [isCalling, setIsCalling] = useState(false);
   const [isRinging, setIsRinging] = useState(false);
@@ -33,34 +42,36 @@ const ChatApp = ({ roomId }: { roomId: string }) => {
   const localVideoRef = useRef<HTMLVideoElement | null>(null);
   const remoteVideoRef = useRef<HTMLVideoElement | null>(null);
   const peerConnection = useRef<RTCPeerConnection | null>(null);
-
+  const [userId, setUserId] = useState<string>("");
   const navigate = useNavigate();
 
+  const {
+    authenticatedUser,
+    loading: userLoading,
+    error,
+  } = useAuthenticatedUser(); // Use the custom hook
   useEffect(() => {
-    const initSocketConnection = async () => {
-      try {
-        const res = await fetch("http://localhost:5000/api/check-session", {
-          credentials: "include",
-        });
-        const data = await res.json();
-        if (data.user) {
-          setUsername(data.user.name);
-          setupSocket();
-        } else {
-          navigate("/login");
-        }
-      } catch (error) {
-        console.error("Session check error:", error);
-      }
+    if (userLoading) return; // Wait until the user is loaded
+    if (error) {
+      console.error("Error loading authenticated user:", error);
+      return;
+    }
+    if (!authenticatedUser) {
+      navigate("/login");
+      return;
+    }
+    const initSocketConnection = () => {
+      setupSocket();
+      setUsername(authenticatedUser.name);
+      setUserId(authenticatedUser.id);
     };
-
     initSocketConnection();
     return () => {
       socket.disconnect();
       cleanupMedia();
     };
-  }, [roomId, navigate]);
-
+  }, [authenticatedUser, userLoading, error, roomId, navigate]);
+  
   const setupSocket = useCallback(() => {
     socket = io("http://localhost:5000", { withCredentials: true });
     socket.emit("joinRoom", { roomId });
@@ -79,7 +90,25 @@ const ChatApp = ({ roomId }: { roomId: string }) => {
     socket.on("callAnswered", handleAnswerReceived);
     socket.on("iceCandidate", handleIceCandidate);
     socket.on("callEnded", handleRemoteCallEnded);
+    socket.on("audioMuted", ({ user, isMuted }) => {
+      setUserAudioStatuses((prevStatuses) => ({
+        ...prevStatuses,
+        [user]: isMuted,
+      }));
+    });
+
+    socket.on("videoMuted", ({ user, isMuted }) => {
+      setUserVideoStatuses((prevStatuses) => ({
+        ...prevStatuses,
+        [user]: isMuted,
+      }));
+    });
+    return () => {
+      socket.off("audioMuted");
+      socket.off("videoMuted");
+    };
   }, [roomId]);
+
 
   useEffect(() => {
     if (remoteStream && remoteVideoRef.current) {
@@ -91,16 +120,42 @@ const ChatApp = ({ roomId }: { roomId: string }) => {
   }, [remoteStream, isCalling]);
 
   useEffect(() => {
-    if (isCalling ) {
+    if (isCalling) {
       console.log("Calling setupLocalStream");
       setupLocalStream();
     }
   }, [isCalling]);
-  
 
-  
-  
-  
+  const handleMuteAudio = () => {
+    const newAudioMutedState = !isAudioMuted;
+    setIsAudioMuted(newAudioMutedState);
+
+    localStream.current?.getAudioTracks().forEach((track) => {
+      track.enabled = !newAudioMutedState;
+    });
+
+    // Emit new audio mute status
+    socket.emit("muteAudio", { roomId, isMuted: newAudioMutedState });
+    setUserAudioStatuses((prevStatuses) => ({
+      ...prevStatuses,
+      [userId]: newAudioMutedState,
+    }));
+  };
+  const handleMuteVideo = () => {
+    const newVideoMutedState = !isVideoMuted;
+    setIsVideoMuted(newVideoMutedState);
+
+    localStream.current?.getVideoTracks().forEach((track) => {
+      track.enabled = !newVideoMutedState;
+    });
+
+    // Emit new video mute status
+    socket.emit("muteVideo", { roomId, isMuted: newVideoMutedState });
+    setUserVideoStatuses((prevStatuses) => ({
+      ...prevStatuses,
+      [userId]: newVideoMutedState,
+    }));
+  };
 
   const handleTypingStatus = (data: string) => {
     setTyping(data);
@@ -111,8 +166,6 @@ const ChatApp = ({ roomId }: { roomId: string }) => {
     setCallerName(caller);
     setIsRinging(true);
   };
-
-  
 
   const handleAnswerReceived = async ({
     answer,
@@ -143,25 +196,27 @@ const ChatApp = ({ roomId }: { roomId: string }) => {
     console.log("Remote description set on incoming call");
   };
 
-  
-
   const acceptCall = async () => {
     setIsRinging(false);
     setIsCalling(true);
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: true,
+      video: true,
+    });
     localStream.current = stream;
 
     if (localVideoRef.current) {
       localVideoRef.current.srcObject = stream;
     }
 
-    stream.getTracks().forEach((track) => peerConnection.current?.addTrack(track, stream));
+    stream
+      .getTracks()
+      .forEach((track) => peerConnection.current?.addTrack(track, stream));
 
     const answer = await peerConnection.current?.createAnswer();
     await peerConnection.current?.setLocalDescription(answer!);
     socket.emit("answerCall", { roomId, answer });
   };
-
 
   const declineCall = () => {
     setIsRinging(false);
@@ -170,7 +225,10 @@ const ChatApp = ({ roomId }: { roomId: string }) => {
   };
 
   const startCall = async () => {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true , video: true});
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: true,
+      video: true,
+    });
     localStream.current = stream;
 
     if (localVideoRef.current) {
@@ -179,7 +237,9 @@ const ChatApp = ({ roomId }: { roomId: string }) => {
 
     peerConnection.current = createPeerConnection();
 
-    stream.getTracks().forEach((track) => peerConnection.current?.addTrack(track, stream));
+    stream
+      .getTracks()
+      .forEach((track) => peerConnection.current?.addTrack(track, stream));
 
     const offer = await peerConnection.current.createOffer();
     await peerConnection.current.setLocalDescription(offer);
@@ -202,7 +262,9 @@ const ChatApp = ({ roomId }: { roomId: string }) => {
         console.error("localVideoRef.current is null");
       }
 
-      stream.getTracks().forEach((track) => peerConnection.current?.addTrack(track, stream));
+      stream
+        .getTracks()
+        .forEach((track) => peerConnection.current?.addTrack(track, stream));
     } catch (error) {
       console.error("Error accessing media devices:", error);
     }
@@ -219,49 +281,48 @@ const ChatApp = ({ roomId }: { roomId: string }) => {
     const pc = new RTCPeerConnection({
       iceServers: [
         { urls: "stun:stun.l.google.com:19302" },
-        { urls: "turn:your.turn.server.com", username: "user", credential: "pass" },
+        {
+          urls: "turn:your.turn.server.com",
+          username: "user",
+          credential: "pass",
+        },
       ],
     });
-  
+
     pc.onicecandidate = (event) => {
       if (event.candidate) {
         socket.emit("iceCandidate", { roomId, candidate: event.candidate });
         console.log("ICE candidate sent:", event.candidate);
       }
     };
-  
+
     pc.ontrack = (event) => {
       console.log("Received remote track:", event);
       if (event.streams && event.streams[0]) {
         const receivedStream = event.streams[0];
-        setRemoteStream(receivedStream);  // Setting the remote stream
+        setRemoteStream(receivedStream); // Setting the remote stream
       } else {
         console.error("No streams found in ontrack event");
       }
     };
-    
-  
+
     return pc;
   };
-  
-  
-  
-  
 
   const endCall = () => {
     if (!isCalling || callEnded) return;
-  
+
     console.log("Ending call");
     setIsCalling(false);
     setCallEnded(true);
-  
+
     // Close the peer connection and stop the local stream tracks
     peerConnection.current?.close();
     cleanupMedia();
-  
+
     // Emit the event to notify the other peer
     socket.emit("endCall", { roomId });
-  
+
     // Reset the call state after cleanup
     setTimeout(() => {
       setIsCalling(false);
@@ -269,8 +330,6 @@ const ChatApp = ({ roomId }: { roomId: string }) => {
       setRemoteStream(null);
     }, 0);
   };
-  
-
 
   const handleRemoteCallEnded = () => {
     setIsCalling(false);
@@ -283,25 +342,22 @@ const ChatApp = ({ roomId }: { roomId: string }) => {
     }, 0);
   };
 
-  
-
   const cleanupMedia = () => {
     // Clean up peer connection
     if (peerConnection.current) {
       peerConnection.current.getSenders().forEach((sender) => {
-        sender.track?.stop();  // Stop the track if it's active
+        sender.track?.stop(); // Stop the track if it's active
       });
       peerConnection.current.close(); // Close the connection
     }
-  
+
     // Stop local stream tracks
     localStream.current?.getTracks().forEach((track) => track.stop()); // Stop video and audio tracks
-  
+
     // Reset the local stream and remote stream
     localStream.current = null;
     setRemoteStream(null);
   };
-  
 
   const handleMessageSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -319,24 +375,36 @@ const ChatApp = ({ roomId }: { roomId: string }) => {
     socket.emit("typing", { roomId });
   };
 
-  const logout = async () => {
-    const response = await fetch("http://localhost:5000/api/logout", {
-      method: "POST",
-      credentials: "include",
-    });
-    if (response.ok) navigate("/login");
-  };
+  const { friend, loading: friendLoading, error: friendError } = useFriendData(
+    roomId, 
+    userId
+  );
+  if (friendLoading) {
+    return <div>Loading friend data...</div>;
+  }
+
+  if (friendError) {
+    return <div>Error: {friendError}</div>;
+  }
 
   return (
     <div className="flex flex-col h-screen bg-gray-100 py-5 pr-5 ">
       <Card className="w-full h-full shadow-lg flex flex-col space-y-4 overflow-y-auto relative">
-        <div className="mb-4">
+        <div className="mb-4 flex justify-between">
+          <div className="flex items-center justify-center gap-2">  
+          <Avatar
+                          src={friend?.ImageURL || undefined}
+                          icon={!friend?.ImageURL ? <UserOutlined /> : undefined}
+                        />    <h1 className="text-2xl font-bold">{friend?.name}</h1>
+          </div>
           <CallControls
             isCalling={isCalling}
             startCall={startCall}
             endCall={endCall}
-            localVideoRef={localVideoRef}
-            logout={logout}
+            handleMuteAudio={handleMuteAudio} 
+            handleMuteVideo={handleMuteVideo} 
+            isAudioMuted={isAudioMuted} 
+            isVideoMuted={isVideoMuted} 
           />
         </div>
         <IncomingCallModal
@@ -347,16 +415,26 @@ const ChatApp = ({ roomId }: { roomId: string }) => {
         />
 
         {isCalling ? (
-          <Videoscomponent localVideoRef={localVideoRef} remoteVideoRef={remoteVideoRef} />
-            ) : (
-        <MessageList
-          messages={messages}
-          typing={typing}
-          username={username}
-          loading={loading}
+          <Videoscomponent
+          userId={userId}          
+          localVideoRef={localVideoRef}
+          remoteVideoRef={remoteVideoRef}
+          isAudioMuted={isAudioMuted}
+          isVideoMuted={isVideoMuted}
+          userAudioStatuses={userAudioStatuses}
+          userVideoStatuses={userVideoStatuses}
+          localStream={localStream.current}  
+          remoteStream={remoteStream}        
+          
         />
-      )
-      }
+        ) : (
+          <MessageList
+            messages={messages}
+            typing={typing}
+            username={username}
+            loading={loading}
+          />
+        )}
         <ChatInput
           message={message}
           setMessage={setMessage}
