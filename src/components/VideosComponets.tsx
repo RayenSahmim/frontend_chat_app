@@ -1,6 +1,9 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import LayoutControls, { LayoutType } from './LayoutControls';
+import VideoContainer from './VideoContainer';
 
 interface VideosComponentProps {
+  username: string;
   userId: string;
   localVideoRef: React.RefObject<HTMLVideoElement>;
   remoteVideoRef: React.RefObject<HTMLVideoElement>;
@@ -13,6 +16,7 @@ interface VideosComponentProps {
 }
 
 const VideosComponent: React.FC<VideosComponentProps> = ({
+  username,
   userId,
   localVideoRef,
   remoteVideoRef,
@@ -23,8 +27,9 @@ const VideosComponent: React.FC<VideosComponentProps> = ({
   localStream,
   remoteStream
 }) => {
+  const [layout, setLayout] = useState<LayoutType>('pip');
+
   useEffect(() => {
-    // Handle local stream audio and video muting
     if (localStream) {
       const audioTrack = localStream.getAudioTracks()[0];
       const videoTrack = localStream.getVideoTracks()[0];
@@ -34,7 +39,6 @@ const VideosComponent: React.FC<VideosComponentProps> = ({
   }, [isAudioMuted, isVideoMuted, userAudioStatuses, userVideoStatuses, localStream, userId]);
 
   useEffect(() => {
-    // Handle remote stream audio and video muting
     const remoteUserId = Object.keys(userAudioStatuses).find(id => id !== userId);
     if (remoteStream) {
       const audioTrack = remoteStream.getAudioTracks()[0];
@@ -48,46 +52,60 @@ const VideosComponent: React.FC<VideosComponentProps> = ({
   const localVideoMuted = isVideoMuted || userVideoStatuses[userId];
   const remoteUserId = Object.keys(userAudioStatuses).find((id) => id !== userId);
   const remoteAudioMuted = userAudioStatuses[remoteUserId || ''];
-  console.log('remoteVideomuted', remoteAudioMuted);
-  console.log('remoteUserId', remoteUserId);
   const remoteVideoMuted = userVideoStatuses[remoteUserId || ''];
 
+  const getLayoutClasses = () => {
+    switch (layout) {
+      case 'grid':
+        return {
+          container: 'grid grid-cols-2 gap-4 p-4',
+          remote: 'w-full h-full',
+          local: 'w-full h-full'
+        };
+      case 'left':
+        return {
+          container: 'flex flex-row p-4 gap-4',
+          remote: 'w-1/3 h-[calc(100vh-2rem)]',
+          local: 'w-2/3 h-[calc(100vh-2rem)]'
+        };
+      case 'right':
+        return {
+          container: 'flex flex-row-reverse p-4 gap-4',
+          remote: 'w-1/3 h-[calc(100vh-2rem)]',
+          local: 'w-2/3 h-[calc(100vh-2rem)]'
+        };
+      default: // pip
+        return {
+          container: 'relative w-full h-screen',
+          remote: 'w-full h-full',
+          local: 'absolute bottom-4 right-4 w-64 h-36'
+        };
+    }
+  };
+
+  const classes = getLayoutClasses();
+
   return (
-    <div className="video-panel flex space-x-4 my-4">
-      <div className="video-container w-1/2 relative">
-        <video
-          ref={localVideoRef}
-          autoPlay
-          muted
-          className="rounded-lg border border-gray-300 shadow-lg w-full h-full object-cover"
+    <div className="relative w-full h-screen bg-[#36393f] overflow-hidden">
+      <LayoutControls currentLayout={layout} onLayoutChange={setLayout} />
+      
+      <div className={classes.container}>
+        <VideoContainer
+          videoRef={remoteVideoRef}
+          isVideoMuted={remoteVideoMuted}
+          isAudioMuted={remoteAudioMuted}
+          username={username}
+          className={classes.remote}
         />
-        {localAudioMuted && (
-          <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 rounded-md">
-            <p>Audio Muted</p>
-          </div>
-        )}
-        {localVideoMuted && (
-          <div className="absolute inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center">
-            <p className="text-white">Video Muted</p>
-          </div>
-        )}
-      </div>
-      <div className="video-container w-1/2 relative">
-        <video
-          ref={remoteVideoRef}
-          autoPlay
-          className="rounded-lg border border-gray-300 shadow-lg w-full h-full object-cover"
+        
+        <VideoContainer
+          videoRef={localVideoRef}
+          isVideoMuted={localVideoMuted}
+          isAudioMuted={localAudioMuted}
+          username={username}
+          isLocal={true}
+          className={classes.local}
         />
-        {remoteAudioMuted && (
-          <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 rounded-md">
-            <p>Audio Muted</p>
-          </div>
-        )}
-        {remoteVideoMuted && (
-          <div className="absolute inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center">
-            <p className="text-white">Video Muted</p>
-          </div>
-        )}
       </div>
     </div>
   );

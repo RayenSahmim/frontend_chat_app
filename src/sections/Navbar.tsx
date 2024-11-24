@@ -4,14 +4,15 @@ import { IoMdMenu } from "react-icons/io";
 import { useNavigate } from 'react-router-dom';
 const navLinks = [
     { label: "Home", href: "/" },
-    { label: "Features", href: "#features" },
+    { label: "About Us", href: "/about" },
+    { label: "Contact", href: "/contact" },
     
 ]
 const Navbar = () => {
     const navigate = useNavigate();
   return (
     <section>
-        <div className=' container mx-auto pt-5 max-w-7xl '>
+        <div className=' container mx-auto mt-5 max-w-7xl fixed top-0 right-0 left-0 z-50 backdrop:blur-3xl bg-white/70'>
             <div className='grid grid-cols-2 lg:grid-cols-3 items-center border border-black/15 rounded-full px-8 py-2'>
             <div>
                 <Link to="/">

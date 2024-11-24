@@ -49,7 +49,7 @@ const LoginPage = () => {
   };
 
   return (
-    <section className=" flex items-center justify-center p-4 mt-32">
+    <section className=" flex items-center justify-center p-4 h-screen">
       <form onSubmit={handleSubmit} className="flex flex-col gap-4 items-center w-full max-w-md">
         <div>
           <img src={logo} alt="RaySend Logo" className="h-24 w-36 mb-4" />

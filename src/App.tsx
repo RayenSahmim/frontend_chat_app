@@ -2,8 +2,8 @@ import { Route, Routes } from 'react-router-dom';
 
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {  LoginPage, PageNotFound, RoomsPage, SignupPage,ProfilePage ,HomePage} from './pages';
-import MainLayout from './layouts/mainLayout';
+import {  LoginPage, PageNotFound, RoomsPage, SignupPage,ProfilePage ,HomePage, AboutPage,ContactPage} from './pages';
+import MainLayout from './layouts/MainLayout';
 
 const App = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -42,7 +42,8 @@ const App = () => {
       <Route path="/" element={<MainLayout children={<HomePage/>}/>} />
       <Route path="/login" element={<MainLayout children={<LoginPage/>}/>} />
       <Route path="/signup" element={<MainLayout children={<SignupPage/>}/>} />
-        
+      <Route path="/about" element={<MainLayout children={<AboutPage/>}/>} />
+      <Route path="/contact" element={<MainLayout children={<ContactPage/>}/>} />
 
       
       <Route path="/root/rooms" element={<RoomsPage />} />

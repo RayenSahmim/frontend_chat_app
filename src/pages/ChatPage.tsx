@@ -1,15 +1,22 @@
-import { Avatar, Card } from "antd";
 import { useState, useEffect, useRef, useCallback } from "react";
 import io, { Socket } from "socket.io-client";
 import { useNavigate } from "react-router-dom";
-import CallControls from "../components/CallControls";
-import MessageList from "../components/MessageList";
-import ChatInput from "../components/ChatInput";
 import IncomingCallModal from "../components/IncomingCallModal";
-import Videoscomponent from "../components/VideosComponets";
 import useAuthenticatedUser from "../hooks/useAuthenticatedUser";
-import { UserOutlined } from "@ant-design/icons";
 import useFriendData from "../hooks/useFriendData";
+import {
+  Mic,
+  MicOff,
+  MoreVertical,
+  Phone,
+  PhoneOff,
+  UserCircle2,
+  Video,
+  VideoOff,
+} from "lucide-react";
+import VideosComponent from "../components/VideosComponets";
+import { MessageList } from "../components/MessageList";
+import { ChatInput } from "../components/ChatInput";
 let socket: Socket;
 
 interface ChatMessage {
@@ -30,7 +37,7 @@ const ChatApp = ({ roomId }: { roomId: string }) => {
   >({});
   const [userVideoStatuses, setUserVideoStatuses] = useState<
     Record<string, boolean>
->({});
+  >({});
 
   const [loading, setLoading] = useState(true);
   const [isCalling, setIsCalling] = useState(false);
@@ -71,7 +78,7 @@ const ChatApp = ({ roomId }: { roomId: string }) => {
       cleanupMedia();
     };
   }, [authenticatedUser, userLoading, error, roomId, navigate]);
-  
+
   const setupSocket = useCallback(() => {
     socket = io("http://localhost:5000", { withCredentials: true });
     socket.emit("joinRoom", { roomId });
@@ -108,7 +115,6 @@ const ChatApp = ({ roomId }: { roomId: string }) => {
       socket.off("videoMuted");
     };
   }, [roomId]);
-
 
   useEffect(() => {
     if (remoteStream && remoteVideoRef.current) {
@@ -375,73 +381,142 @@ const ChatApp = ({ roomId }: { roomId: string }) => {
     socket.emit("typing", { roomId });
   };
 
-  const { friend, loading: friendLoading, error: friendError } = useFriendData(
-    roomId, 
-    userId
-  );
-  if (friendLoading) {
-    return <div>Loading friend data...</div>;
-  }
-
-  if (friendError) {
-    return <div>Error: {friendError}</div>;
-  }
-
-  return (
-    <div className="flex flex-col h-screen bg-gray-100 py-5 pr-5 ">
-      <Card className="w-full h-full shadow-lg flex flex-col space-y-4 overflow-y-auto relative">
-        <div className="mb-4 flex justify-between">
-          <div className="flex items-center justify-center gap-2">  
-          <Avatar
-                          src={friend?.ImageURL || undefined}
-                          icon={!friend?.ImageURL ? <UserOutlined /> : undefined}
-                        />    <h1 className="text-2xl font-bold">{friend?.name}</h1>
-          </div>
-          <CallControls
-            isCalling={isCalling}
-            startCall={startCall}
-            endCall={endCall}
-            handleMuteAudio={handleMuteAudio} 
-            handleMuteVideo={handleMuteVideo} 
-            isAudioMuted={isAudioMuted} 
-            isVideoMuted={isVideoMuted} 
-          />
+  const {
+    friend,
+    loading: friendLoading,
+    error: friendError,
+  } = useFriendData(roomId, userId);
+  if (userLoading || friendLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-50">
+        <div className="flex flex-col items-center space-y-3">
+          <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+          <p className="text-gray-500 font-medium">Loading...</p>
         </div>
-        <IncomingCallModal
-          visible={isRinging}
-          callerName={callerName}
-          onAccept={acceptCall}
-          onDecline={declineCall}
-        />
+      </div>
+    );
+  }
 
-        {isCalling ? (
-          <Videoscomponent
-          userId={userId}          
-          localVideoRef={localVideoRef}
-          remoteVideoRef={remoteVideoRef}
-          isAudioMuted={isAudioMuted}
-          isVideoMuted={isVideoMuted}
-          userAudioStatuses={userAudioStatuses}
-          userVideoStatuses={userVideoStatuses}
-          localStream={localStream.current}  
-          remoteStream={remoteStream}        
-          
-        />
-        ) : (
-          <MessageList
-            messages={messages}
-            typing={typing}
-            username={username}
-            loading={loading}
-          />
-        )}
-        <ChatInput
-          message={message}
-          setMessage={setMessage}
-          handleMessageSubmit={handleMessageSubmit}
-          handleTyping={handleTyping}
-        />
-      </Card>
+  if (error || friendError) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-50">
+        <p className="text-red-500">Error: {error || friendError}</p>
+      </div>
+    );
+  }
+  return (
+    <div className="flex flex-col h-screen bg-gray-50 w-full">
+      <div className="flex-1 flex flex-col   w-full ">
+        <div className="bg-white rounded-xl shadow-lg flex flex-col h-full overflow-hidden">
+          {/* Header */}
+          <div className="p-4 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                {friend?.ImageURL ? (
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center flex-shrink-0">
+                    <span className="text-lg font-semibold text-white">
+                      {friend?.name.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
+                    <UserCircle2 className="w-7 h-7 text-gray-400" />
+                  </div>
+                )}
+                <div className="flex flex-col">
+                  <h2 className=" font-semibold ">{friend?.name}</h2>
+                  <p className="text-sm text-gray-500">{"Online"}</p>
+                </div>
+              </div>
+
+              {/* Call Controls */}
+              <div className="flex items-center space-x-2">
+                {isCalling ? (
+                  <>
+                    <button
+                      onClick={handleMuteAudio}
+                      className="p-2 text-gray-500 hover:text-gray-600 rounded-full hover:bg-gray-100"
+                    >
+                      {isAudioMuted ? (
+                        <MicOff className="w-5 h-5" />
+                      ) : (
+                        <Mic className="w-5 h-5" />
+                      )}
+                    </button>
+                    <button
+                      onClick={handleMuteVideo}
+                      className="p-2 text-gray-500 hover:text-gray-600 rounded-full hover:bg-gray-100"
+                    >
+                      {isVideoMuted ? (
+                        <VideoOff className="w-5 h-5" />
+                      ) : (
+                        <Video className="w-5 h-5" />
+                      )}
+                    </button>
+                    <button
+                      onClick={endCall}
+                      className="p-2 text-gray-500 hover:text-gray-600 rounded-full hover:bg-gray-100"
+                    >
+                      <PhoneOff className="w-5 h-5" />
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={startCall}
+                    className="p-2 text-gray-500 hover:text-gray-600 rounded-full hover:bg-gray-100"
+                  >
+                    <Phone className="w-5 h-5" />
+                  </button>
+                )}
+                <button className="p-2 text-gray-500 hover:text-gray-600 rounded-full hover:bg-gray-100">
+                  <MoreVertical className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Main Content Area */}
+          <div className="flex-1 flex flex-col min-h-0">
+            {isCalling ? (
+              <VideosComponent
+              username={username}
+                userId={userId}
+                localVideoRef={localVideoRef}
+                remoteVideoRef={remoteVideoRef}
+                isAudioMuted={isAudioMuted}
+                isVideoMuted={isVideoMuted}
+                userAudioStatuses={userAudioStatuses}
+                userVideoStatuses={userVideoStatuses}
+                localStream={localStream.current}
+                remoteStream={remoteStream}
+              />
+            ) : (
+              <>
+                <MessageList
+                  messages={messages}
+                  typing={typing}
+                  username={username}
+                  loading={loading}
+                />
+                <ChatInput
+                  message={message}
+                  setMessage={setMessage}
+                  handleMessageSubmit={handleMessageSubmit}
+                  handleTyping={handleTyping}
+                />
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Incoming Call Modal */}
+      <IncomingCallModal
+        visible={isRinging}
+        callerName={callerName}
+        onAccept={acceptCall}
+        onDecline={declineCall}
+      />
     </div>
   );
 };
