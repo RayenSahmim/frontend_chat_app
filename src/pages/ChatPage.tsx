@@ -1,22 +1,14 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import io, { Socket } from "socket.io-client";
 import { useNavigate } from "react-router-dom";
 import IncomingCallModal from "../components/IncomingCallModal";
 import useAuthenticatedUser from "../hooks/useAuthenticatedUser";
 import useFriendData from "../hooks/useFriendData";
-import {
-  Mic,
-  MicOff,
-  MoreVertical,
-  Phone,
-  PhoneOff,
-  UserCircle2,
-  Video,
-  VideoOff,
-} from "lucide-react";
+import {UserCircle2} from "lucide-react";
 import VideosComponent from "../components/VideosComponets";
 import { MessageList } from "../components/MessageList";
 import { ChatInput } from "../components/ChatInput";
+import NavbarControlls from "../components/NavbarControlls";
+import io, { Socket } from "socket.io-client";
 let socket: Socket;
 
 interface ChatMessage {
@@ -51,6 +43,10 @@ const ChatApp = ({ roomId }: { roomId: string }) => {
   const peerConnection = useRef<RTCPeerConnection | null>(null);
   const [userId, setUserId] = useState<string>("");
   const navigate = useNavigate();
+  
+
+  
+  
 
   const {
     authenticatedUser,
@@ -67,17 +63,25 @@ const ChatApp = ({ roomId }: { roomId: string }) => {
       navigate("/login");
       return;
     }
+
+
     const initSocketConnection = () => {
-      setupSocket();
-      setUsername(authenticatedUser.name);
-      setUserId(authenticatedUser.id);
+        setupSocket();
+        setUsername(authenticatedUser.name);
+        setUserId(authenticatedUser.id);
+
     };
+
     initSocketConnection();
+
     return () => {
-      socket.disconnect();
+      if (socket) {
+        socket.disconnect();
+      }
       cleanupMedia();
     };
   }, [authenticatedUser, userLoading, error, roomId, navigate]);
+
 
   const setupSocket = useCallback(() => {
     socket = io("http://localhost:5000", { withCredentials: true });
@@ -115,6 +119,7 @@ const ChatApp = ({ roomId }: { roomId: string }) => {
       socket.off("videoMuted");
     };
   }, [roomId]);
+
 
   useEffect(() => {
     if (remoteStream && remoteVideoRef.current) {
@@ -405,112 +410,79 @@ const ChatApp = ({ roomId }: { roomId: string }) => {
     );
   }
   return (
-    <div className="flex flex-col h-screen bg-gray-50 w-full">
-      <div className="flex-1 flex flex-col   w-full ">
-        <div className="bg-white rounded-xl shadow-lg flex flex-col h-full overflow-hidden">
-          {/* Header */}
-          <div className="p-4 border-b border-gray-200">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                {friend?.ImageURL ? (
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center flex-shrink-0">
-                    <span className="text-lg font-semibold text-white">
-                      {friend?.name.charAt(0).toUpperCase()}
-                    </span>
+    <div className="relative flex flex-col h-full w-full ">
+      <div className="absolute inset-0 flex flex-col bg-gray-50">
+        <div className="flex-1 flex flex-col">
+          <div className="bg-white rounded-xl shadow-lg flex flex-col h-full">
+            {/* Fixed Header */}
+            <header className="sticky top-0 z-20 bg-white border-b border-gray-200 p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  {friend?.ImageURL ? (
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center flex-shrink-0">
+                      <span className="text-lg font-semibold text-white">
+                        {friend?.name.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
+                      <UserCircle2 className="w-7 h-7 text-gray-400" />
+                    </div>
+                  )}
+                  <div className="flex flex-col">
+                    <h2 className="font-semibold">{friend?.name}</h2>
+                    <p className="text-sm text-gray-500">{"Online"}</p>
                   </div>
-                ) : (
-                  <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
-                    <UserCircle2 className="w-7 h-7 text-gray-400" />
-                  </div>
-                )}
-                <div className="flex flex-col">
-                  <h2 className=" font-semibold ">{friend?.name}</h2>
-                  <p className="text-sm text-gray-500">{"Online"}</p>
                 </div>
-              </div>
 
-              {/* Call Controls */}
-              <div className="flex items-center space-x-2">
-                {isCalling ? (
-                  <>
-                    <button
-                      onClick={handleMuteAudio}
-                      className="p-2 text-gray-500 hover:text-gray-600 rounded-full hover:bg-gray-100"
-                    >
-                      {isAudioMuted ? (
-                        <MicOff className="w-5 h-5" />
-                      ) : (
-                        <Mic className="w-5 h-5" />
-                      )}
-                    </button>
-                    <button
-                      onClick={handleMuteVideo}
-                      className="p-2 text-gray-500 hover:text-gray-600 rounded-full hover:bg-gray-100"
-                    >
-                      {isVideoMuted ? (
-                        <VideoOff className="w-5 h-5" />
-                      ) : (
-                        <Video className="w-5 h-5" />
-                      )}
-                    </button>
-                    <button
-                      onClick={endCall}
-                      className="p-2 text-gray-500 hover:text-gray-600 rounded-full hover:bg-gray-100"
-                    >
-                      <PhoneOff className="w-5 h-5" />
-                    </button>
-                  </>
-                ) : (
-                  <button
-                    onClick={startCall}
-                    className="p-2 text-gray-500 hover:text-gray-600 rounded-full hover:bg-gray-100"
-                  >
-                    <Phone className="w-5 h-5" />
-                  </button>
-                )}
-                <button className="p-2 text-gray-500 hover:text-gray-600 rounded-full hover:bg-gray-100">
-                  <MoreVertical className="w-5 h-5" />
-                </button>
+                <NavbarControlls
+                  isCalling={isCalling}
+                  startCall={startCall}
+                  endCall={endCall}
+                  handleMuteAudio={handleMuteAudio}
+                  handleMuteVideo={handleMuteVideo}
+                  isAudioMuted={isAudioMuted}
+                  isVideoMuted={isVideoMuted}
+                />
               </div>
-            </div>
-          </div>
+            </header>
 
-          {/* Main Content Area */}
-          <div className="flex-1 flex flex-col min-h-0">
-            {isCalling ? (
-              <VideosComponent
-              username={username}
-                userId={userId}
-                localVideoRef={localVideoRef}
-                remoteVideoRef={remoteVideoRef}
-                isAudioMuted={isAudioMuted}
-                isVideoMuted={isVideoMuted}
-                userAudioStatuses={userAudioStatuses}
-                userVideoStatuses={userVideoStatuses}
-                localStream={localStream.current}
-                remoteStream={remoteStream}
-              />
-            ) : (
-              <>
-                <MessageList
-                  messages={messages}
-                  typing={typing}
+            {/* Main Content Area */}
+            <div className="flex-1 flex flex-col min-h-0 relative">
+              {isCalling ? (
+                <VideosComponent
                   username={username}
-                  loading={loading}
+                  userId={userId}
+                  localVideoRef={localVideoRef}
+                  remoteVideoRef={remoteVideoRef}
+                  isAudioMuted={isAudioMuted}
+                  isVideoMuted={isVideoMuted}
+                  userAudioStatuses={userAudioStatuses}
+                  userVideoStatuses={userVideoStatuses}
+                  localStream={localStream.current}
+                  remoteStream={remoteStream}
                 />
-                <ChatInput
-                  message={message}
-                  setMessage={setMessage}
-                  handleMessageSubmit={handleMessageSubmit}
-                  handleTyping={handleTyping}
-                />
-              </>
-            )}
+              ) : (
+                <>
+                    <MessageList
+                      messages={messages}
+                      typing={typing}
+                      username={username}
+                      loading={loading}
+                    />
+                    <ChatInput
+                      message={message}
+                      setMessage={setMessage}
+                      handleMessageSubmit={handleMessageSubmit}
+                      handleTyping={handleTyping}
+                    />
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Incoming Call Modal */}
       <IncomingCallModal
         visible={isRinging}
         callerName={callerName}
@@ -519,6 +491,7 @@ const ChatApp = ({ roomId }: { roomId: string }) => {
       />
     </div>
   );
+
 };
 
 export default ChatApp;

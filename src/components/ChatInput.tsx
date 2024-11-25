@@ -38,9 +38,11 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   };
 
   return (
+    <div className="sticky bottom-0 z-20 ">
+
     <form
       onSubmit={handleMessageSubmit}
-      className="bg-white border-t border-gray-200 p-4"
+      className="bg-white border-t border-gray-200 p-4 "
     >
       <div className="flex items-center space-x-2">
         {/* Paperclip Button */}
@@ -105,5 +107,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         </div>
       )}
     </form>
+    </div>
   );
 };

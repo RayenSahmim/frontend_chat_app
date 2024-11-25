@@ -87,27 +87,28 @@ const RoomsPage = () => {
     return (
       <div className="flex justify-center items-center h-screen bg-gray-50">
         <div className="flex justify-center items-center h-32">
-      <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
-      </div>
+          <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen overflow-hidden bg-gray-50">
       <motion.div 
         initial={{ x: -300 }}
         animate={{ x: 0 }}
         className={cn(
-          "bg-white border-r border-gray-200 flex flex-col",
+          "bg-white border-r border-gray-200 flex flex-col h-full overflow-x-hidden",
           isMobileView && selectedRoomId ? 'hidden' : 'w-full',
           'md:w-96'
         )}
       >
-        <div >
-          <div className="flex justify-between items-center  p-4 border-b border-gray-200">
-          <h2 className="text-xl font-semibold">Messages</h2>
-          <motion.button
+        {/* Fixed Header */}
+        <div className="flex-none">
+          <div className="flex justify-between items-center p-4 border-b border-gray-200">
+            <h2 className="text-xl font-semibold">Messages</h2>
+            <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={handleLogout}
@@ -118,33 +119,33 @@ const RoomsPage = () => {
             </motion.button>
           </div>
           <div className="p-4 border-b border-gray-200">
-
-          <div className="relative">
-            <input
-              type="text"
-              className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-              placeholder="Search conversations..."
-              value={searchTerm}
-              onChange={handleSearchChange}
-            />
-            <Search className="w-5 h-5 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
-            <AnimatePresence>
-              {searchTerm && (
-                <motion.button
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.8 }}
-                  onClick={clearSearch}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                >
-                  <X className="w-4 h-4" />
-                </motion.button>
-              )}
-            </AnimatePresence>
-          </div>
+            <div className="relative">
+              <input
+                type="text"
+                className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                placeholder="Search conversations..."
+                value={searchTerm}
+                onChange={handleSearchChange}
+              />
+              <Search className="w-5 h-5 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
+              <AnimatePresence>
+                {searchTerm && (
+                  <motion.button
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    onClick={clearSearch}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="w-4 h-4" />
+                  </motion.button>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         </div>
 
+        {/* Scrollable Room List */}
         <div className="flex-1 overflow-y-auto">
           <AnimatePresence mode="wait">
             {searchLoading ? (
@@ -194,9 +195,7 @@ const RoomsPage = () => {
                       )}
                     >
                       <div className="relative">
-                        
-                        
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center flex-shrink-0">
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center flex-shrink-0">
                           <span className="text-xl font-bold text-white">
                             {friend?.name.charAt(0).toUpperCase()}
                           </span>
@@ -227,8 +226,8 @@ const RoomsPage = () => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         className={cn(
-          !isMobileView || selectedRoomId ? 'flex' : 'hidden',
-          'md:flex flex-1 flex-col'
+          !isMobileView || selectedRoomId ? 'flex flex-col' : 'hidden',
+          'md:flex flex-1 overflow-hidden'
         )}
       >
         {selectedRoomId ? (
@@ -245,7 +244,9 @@ const RoomsPage = () => {
                 </motion.button>
               </div>
             )}
-            <ChatPage roomId={selectedRoomId} />
+            <div className="flex-1 overflow-x-hidden">
+              <ChatPage roomId={selectedRoomId} />
+            </div>
           </>
         ) : (
           <div className="flex-1 flex items-center justify-center bg-gray-50">

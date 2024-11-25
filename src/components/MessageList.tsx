@@ -54,7 +54,7 @@ export const MessageList: React.FC<MessageListProps> = ({
 
   if (loading) {
     return (
-      <div className="flex-1 flex items-center justify-center">
+      <div className="flex-1 flex items-center justify-center p-4   min-h-[calc(100dvh-2rem)]">
         <div className="flex flex-col items-center space-y-3">
           <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
           <p className="text-gray-500">Loading messages...</p>
@@ -66,7 +66,7 @@ export const MessageList: React.FC<MessageListProps> = ({
   const messageGroups = groupMessagesByDate(messages);
 
   return (
-    <div className="flex-1 overflow-y-auto px-4 py-6">
+    <div className="px-4 py-6  h-fit min-h-[calc(100dvh-9.75rem)]">
       {messages.length === 0 ? (
         <div className="h-full flex flex-col items-center justify-center text-center">
           <MessageSquare className="w-16 h-16 text-gray-300 mb-4" />
@@ -83,6 +83,7 @@ export const MessageList: React.FC<MessageListProps> = ({
                 </div>
               </div>
               {msgs.map((msg, index) => {
+                console.log(msg.user, username);
                 const isOwn = msg.user === username;
                 return (
                   <div

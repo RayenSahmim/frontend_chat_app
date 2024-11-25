@@ -76,9 +76,9 @@ const VideosComponent: React.FC<VideosComponentProps> = ({
         };
       default: // pip
         return {
-          container: 'relative w-full h-screen',
+          container: 'relative w-full h-[calc(100vh-2rem)]',
           remote: 'w-full h-full',
-          local: 'absolute bottom-4 right-4 w-64 h-36'
+          local: 'absolute bottom-32 -right-2 w-64 h-36'
         };
     }
   };
