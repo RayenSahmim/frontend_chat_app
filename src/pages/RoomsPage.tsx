@@ -6,6 +6,7 @@ import ChatPage from "./ChatPage";
 import useAuthenticatedUser from "../hooks/useAuthenticatedUser";
 import { useNavigate } from "react-router-dom";
 import { cn } from "../lib/utils";
+import { useOnlineUsers } from "../hooks/useOnlineUsers";
 
 interface Room {
   _id: string;
@@ -29,13 +30,14 @@ const RoomsPage = () => {
   const [isMobileView, setIsMobileView] = useState(false);
   const navigate = useNavigate();
   const { authenticatedUser, loading: authLoading, error } = useAuthenticatedUser();
-
+  const {onlineUsers} = useOnlineUsers();
   useEffect(() => {
     const handleResize = () => setIsMobileView(window.innerWidth < 768);
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
 
   const fetchRooms = async (query: string) => {
     setSearchLoading(true);
@@ -58,6 +60,7 @@ const RoomsPage = () => {
     fetchRooms("").then(() => setLoading(false));
   }, []);
 
+  
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setSearchTerm(value);
@@ -183,7 +186,11 @@ const RoomsPage = () => {
                 {rooms.map((room) => {
                   const friend = room.users.find(
                     (user) => user._id !== authenticatedUser.id
+                    
                   );
+                  
+                  const isOnline = friend && onlineUsers.includes(friend._id);
+
                   return (
                     <motion.div
                       key={room._id}
@@ -202,7 +209,7 @@ const RoomsPage = () => {
                         </div>
                         <div className={cn(
                           "absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white",
-                          Math.random() > 0.5 ? 'bg-green-500' : 'bg-gray-300'
+                          isOnline ? 'bg-green-500' : 'bg-gray-300'
                         )} />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -245,7 +252,7 @@ const RoomsPage = () => {
               </div>
             )}
             <div className="flex-1 overflow-x-hidden">
-              <ChatPage roomId={selectedRoomId} />
+              <ChatPage roomId={selectedRoomId } OnlineUsers={onlineUsers} />
             </div>
           </>
         ) : (

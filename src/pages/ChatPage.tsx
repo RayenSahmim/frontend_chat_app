@@ -11,11 +11,11 @@ import VideosComponent from '../components/VideosComponets';
 import { MessageList } from '../components/MessageList';
 import { ChatInput } from '../components/ChatInput';
 
-const ChatApp = ({ roomId }: { roomId: string }) => {
+const ChatApp = ({ roomId  , OnlineUsers}: { roomId: string  , OnlineUsers: string[] }) => {
   const [message, setMessage] = useState('');
   const localVideoRef = React.useRef<HTMLVideoElement>(null);
   const remoteVideoRef = React.useRef<HTMLVideoElement>(null);
-  
+
 
 
   const {
@@ -72,6 +72,9 @@ const ChatApp = ({ roomId }: { roomId: string }) => {
     error: friendError,
   } = useFriendData(roomId, authenticatedUser?.id || '');
 
+
+  const isOnline = friend && OnlineUsers.includes(friend._id);
+
   if (userLoading || friendLoading) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-50">
@@ -120,7 +123,7 @@ const ChatApp = ({ roomId }: { roomId: string }) => {
                   )}
                   <div className="flex flex-col">
                     <h2 className="font-semibold">{friend?.name}</h2>
-                    <p className="text-sm text-gray-500">{'Online'}</p>
+                    <p className="text-sm text-gray-500">{isOnline ? 'Online' : 'Offline'}</p>
                   </div>
                 </div>
 
