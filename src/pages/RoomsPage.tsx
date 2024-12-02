@@ -7,6 +7,7 @@ import useAuthenticatedUser from "../hooks/useAuthenticatedUser";
 import { useNavigate } from "react-router-dom";
 import { cn } from "../lib/utils";
 import { useOnlineUsers } from "../hooks/useOnlineUsers";
+import { useSocket } from "../Providers/SocketContext";
 
 interface Room {
   _id: string;
@@ -31,6 +32,7 @@ const RoomsPage = () => {
   const navigate = useNavigate();
   const { authenticatedUser, loading: authLoading, error } = useAuthenticatedUser();
   const {onlineUsers} = useOnlineUsers();
+  const {socket,connected} = useSocket();
   useEffect(() => {
     const handleResize = () => setIsMobileView(window.innerWidth < 768);
     handleResize();
@@ -60,6 +62,9 @@ const RoomsPage = () => {
     fetchRooms("").then(() => setLoading(false));
   }, []);
 
+  if(!connected && socket){
+    socket.connect();
+  }
   
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -75,12 +80,21 @@ const RoomsPage = () => {
   };
 
   const handleLogout = async () => {
+    if(!socket) return;
     const response = await fetch("http://localhost:5000/api/logout", {
       method: "POST",
       credentials: "include",
     });
-    if (response.ok) navigate("/login");
+    if (response.ok){
+      socket.disconnect(); // Ensure the socket disconnects
+      socket.emit('logout');
+      navigate("/login");
+
+    } 
   };
+
+  
+  
 
   const handleBackToList = () => setSelectedRoomId(null);
 

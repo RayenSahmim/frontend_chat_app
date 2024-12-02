@@ -36,11 +36,17 @@ export const useVideoCall = (roomId: string) => {
     };
 
     pc.ontrack = (event) => {
+      console.log('Received track event:', event);
       if (event.streams?.[0]) {
-        const receivedStream = event.streams[0];
-        setRemoteStream(receivedStream); // Setting the remote stream
+          const receivedStream = event.streams[0];
+          console.log('Received stream tracks:', receivedStream.getTracks());
+          
+          // Ensure the stream is set asynchronously
+          setTimeout(() => {
+              setRemoteStream(receivedStream);
+          }, 0);
       }
-    };
+  };
 
     return pc;
   }, [roomId, socket]);
@@ -87,36 +93,79 @@ export const useVideoCall = (roomId: string) => {
       socket.off('videoMuted');
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [socket, createPeerConnection]);
+  }, [socket, createPeerConnection, isCalling, isRinging]);
+
+
+  const setupLocalStream = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: true,
+      });
+      localStream.current = stream;
+      
+      // Modify existing peer connection or create if not exists
+      if (!peerConnection.current) {
+        peerConnection.current = createPeerConnection();
+      }
+
+      // Add tracks to peer connection
+      stream.getTracks().forEach((track) => 
+        peerConnection.current?.addTrack(track, stream)
+      );
+
+      return stream;
+    } catch (error) {
+      console.error("Error accessing media devices:", error);
+      return null;
+    }
+  }, [createPeerConnection]);
+
+  
 
   const startCall = async () => {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
-    localStream.current = stream;
-    peerConnection.current = createPeerConnection();
-    
-    stream.getTracks().forEach(track => 
-      peerConnection.current?.addTrack(track, stream)
-    );
+    try {
+      // Setup local stream first
+      const stream = await setupLocalStream();
+      if (!stream) {
+        console.error("Failed to get local stream");
+        return;
+      }
 
-    const offer = await peerConnection.current.createOffer();
-    await peerConnection.current.setLocalDescription(offer);
-    socket?.emit('callUser', { roomId, offer });
-    setIsCalling(true);
+      // Create offer
+      const offer = await peerConnection.current?.createOffer();
+      await peerConnection.current?.setLocalDescription(offer);
+      
+      // Emit call to other user
+      socket?.emit('callUser', { roomId, offer });
+      setIsCalling(true);
+    } catch (error) {
+      console.error("Error starting call:", error);
+    }
   };
 
+
   const acceptCall = async () => {
-    setIsRinging(false);
-    setIsCalling(true);
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
-    localStream.current = stream;
+    try {
+      // Setup local stream first
+      const stream = await setupLocalStream();
+      if (!stream) {
+        console.error("Failed to get local stream");
+        return;
+      }
 
-    stream.getTracks().forEach(track => 
-      peerConnection.current?.addTrack(track, stream)
-    );
+      setIsRinging(false);
+      setIsCalling(true);
 
-    const answer = await peerConnection.current?.createAnswer();
-    await peerConnection.current?.setLocalDescription(answer!);
-    socket?.emit('answerCall', { roomId, answer });
+      // Create answer
+      const answer = await peerConnection.current?.createAnswer();
+      await peerConnection.current?.setLocalDescription(answer!);
+      
+      // Emit answer to other user
+      socket?.emit('answerCall', { roomId, answer });
+    } catch (error) {
+      console.error("Error accepting call:", error);
+    }
   };
 
   const declineCall = () => {

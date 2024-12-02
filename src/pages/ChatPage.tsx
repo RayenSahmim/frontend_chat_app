@@ -50,18 +50,43 @@ const ChatApp = ({ roomId  , OnlineUsers}: { roomId: string  , OnlineUsers: stri
     handleMuteVideo,
   } = useVideoCall(roomId);
 
+
+  
+
   useEffect(() => {
     if (localStream && localVideoRef.current) {
       localVideoRef.current.srcObject = localStream;
     }
-  }, [localStream,isCalling]);
+  }, [localStream,remoteStream,isCalling]);
 
-  // Handle remote stream
   useEffect(() => {
+    console.log('Remote stream in effect:', remoteStream);
+    console.log('Remote video ref:', remoteVideoRef.current);
+    console.log('Is calling:', isCalling);
+    
     if (remoteStream && remoteVideoRef.current) {
-      remoteVideoRef.current.srcObject = remoteStream;
+        try {
+            // Ensure the srcObject is set asynchronously
+            const videoElement = remoteVideoRef.current;
+            videoElement.srcObject = remoteStream;
+            
+            // Additional check to ensure tracks are playable
+            const tracks = remoteStream.getTracks();
+            tracks.forEach(track => {
+                console.log(`Track kind: ${track.kind}, enabled: ${track.enabled}, muted: ${track.muted}`);
+            });
+
+            videoElement.onloadedmetadata = () => {
+                videoElement.play().catch(error => {
+                    console.error('Error playing video:', error);
+                });
+            };
+        } catch (error) {
+            console.error('Error setting remote stream:', error);
+        }
     }
-  }, [remoteStream,isCalling]);
+}, [remoteStream, isCalling]);
+
 
 
   
