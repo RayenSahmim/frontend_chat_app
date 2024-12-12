@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import LayoutControls, { LayoutType } from './LayoutControls';
+
 import VideoContainer from './VideoContainer';
+import LayoutControls, { LayoutType } from './LayoutControls';
+import { useLayoutClasses } from '../hooks/useLayoutClasees';
 
 interface VideosComponentProps {
   username: string;
@@ -28,6 +30,7 @@ const VideosComponent: React.FC<VideosComponentProps> = ({
   remoteStream
 }) => {
   const [layout, setLayout] = useState<LayoutType>('pip');
+  const classes = useLayoutClasses(layout);
 
   useEffect(() => {
     if (localStream) {
@@ -53,37 +56,6 @@ const VideosComponent: React.FC<VideosComponentProps> = ({
   const remoteUserId = Object.keys(userAudioStatuses).find((id) => id !== userId);
   const remoteAudioMuted = userAudioStatuses[remoteUserId || ''];
   const remoteVideoMuted = userVideoStatuses[remoteUserId || ''];
-
-  const getLayoutClasses = () => {
-    switch (layout) {
-      case 'grid':
-        return {
-          container: 'grid grid-cols-2 gap-4 p-4',
-          remote: 'w-full h-full',
-          local: 'w-full h-full'
-        };
-      case 'left':
-        return {
-          container: 'flex flex-row p-4 gap-4',
-          remote: 'w-1/3 h-[calc(100vh-2rem)]',
-          local: 'w-2/3 h-[calc(100vh-2rem)]'
-        };
-      case 'right':
-        return {
-          container: 'flex flex-row-reverse p-4 gap-4',
-          remote: 'w-1/3 h-[calc(100vh-2rem)]',
-          local: 'w-2/3 h-[calc(100vh-2rem)]'
-        };
-      default: // pip
-        return {
-          container: 'relative w-full h-[calc(100vh-2rem)]',
-          remote: 'w-full h-full',
-          local: 'absolute bottom-32 -right-2 w-64 h-36'
-        };
-    }
-  };
-
-  const classes = getLayoutClasses();
 
   return (
     <div className="relative w-full h-screen bg-[#36393f] overflow-hidden">

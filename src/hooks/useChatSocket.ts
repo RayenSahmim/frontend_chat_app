@@ -44,6 +44,7 @@ export const useChatSocket = (roomId: string, username: string) => {
     
     socket.emit('message', { roomId, msg: message });
     setMessages(prev => [...prev, { user: username, message, timestamp: new Date() }]);
+    
   }, [socket, roomId, username]);
 
   const sendTyping = useCallback(() => {

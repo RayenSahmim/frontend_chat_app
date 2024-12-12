@@ -105,9 +105,10 @@ export const useVideoCall = (roomId: string) => {
       localStream.current = stream;
       
       // Modify existing peer connection or create if not exists
-      if (!peerConnection.current) {
+      if (!peerConnection.current || peerConnection.current.signalingState === 'closed') {
         peerConnection.current = createPeerConnection();
       }
+  
 
       // Add tracks to peer connection
       stream.getTracks().forEach((track) => 

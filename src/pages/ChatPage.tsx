@@ -6,7 +6,7 @@ import useFriendData from '../hooks/useFriendData';
 
 import { useChatSocket } from '../hooks/useChatSocket';
 import { useVideoCall } from '../hooks/useVideoCall';
-import NavbarControlls from '../components/NavbarControlls';
+import NavbarControlls from '../components/NavbarControls';
 import VideosComponent from '../components/VideosComponets';
 import { MessageList } from '../components/MessageList';
 import { ChatInput } from '../components/ChatInput';
@@ -60,9 +60,7 @@ const ChatApp = ({ roomId  , OnlineUsers}: { roomId: string  , OnlineUsers: stri
   }, [localStream,remoteStream,isCalling]);
 
   useEffect(() => {
-    console.log('Remote stream in effect:', remoteStream);
-    console.log('Remote video ref:', remoteVideoRef.current);
-    console.log('Is calling:', isCalling);
+
     
     if (remoteStream && remoteVideoRef.current) {
         try {
@@ -126,6 +124,9 @@ const ChatApp = ({ roomId  , OnlineUsers}: { roomId: string  , OnlineUsers: stri
       setMessage('');
     }
   };
+
+  console.log("userAudioStatuses:", userAudioStatuses);
+  console.log("userVideoStatuses:", userVideoStatuses);
 
   return (
     <div className="relative flex flex-col h-full w-full">

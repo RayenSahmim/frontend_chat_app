@@ -1,12 +1,6 @@
-import { Button, Tooltip, Space } from "antd";
-import {
-  PhoneFilled,
-  PhoneOutlined,
-  AudioMutedOutlined,
-  AudioOutlined,
-  VideoCameraOutlined,
-  VideoCameraAddOutlined,
-} from "@ant-design/icons";
+import { Mic, MicOff, Phone, PhoneOff, Video, VideoOff } from 'lucide-react';
+import { Tooltip } from 'antd';
+import { cn } from '../lib/utils';
 
 interface CallControlsProps {
   isCalling: boolean;
@@ -18,7 +12,33 @@ interface CallControlsProps {
   isVideoMuted: boolean;
 }
 
-const CallControls: React.FC<CallControlsProps> = ({
+const ControlButton = ({
+  onClick,
+  icon,
+  tooltip,
+  active,
+}: {
+  onClick: () => void;
+  icon: JSX.Element;
+  tooltip: string;
+  active?: boolean;
+}) => (
+  <Tooltip title={tooltip} placement="bottom">
+    <button
+      onClick={onClick}
+      className={cn(
+        'p-3 rounded-full transition-all duration-200 ease-in-out',
+        active
+          ? 'bg-red-100 text-red-600 hover:bg-red-200'
+          : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+      )}
+    >
+      {icon}
+    </button>
+  </Tooltip>
+);
+
+export const CallControls = ({
   isCalling,
   startCall,
   endCall,
@@ -26,67 +46,37 @@ const CallControls: React.FC<CallControlsProps> = ({
   handleMuteVideo,
   isAudioMuted,
   isVideoMuted,
-}) => {
+}: CallControlsProps) => {
   return (
-    <div className="flex items-center space-x-2 justify-end">
-      <Space>
-        {/* Start/End Call Button */}
-        <Tooltip title={isCalling ? "End Call" : "Start Call"}>
-          <Button
-            shape="circle"
-            icon={isCalling ? <PhoneFilled /> : <PhoneOutlined />}
-            onClick={isCalling ? endCall : startCall}
-            style={{
-              backgroundColor: isCalling ? "#ff4d4f" : "#1890ff",
-              borderColor: isCalling ? "#ff4d4f" : "#1890ff",
-              color: "white",
-              transition: "background-color 0.3s, transform 0.2s, box-shadow 0.2s",
-              boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
-            }}
-            className="flex items-center justify-center hover:scale-105 active:scale-95 hover:shadow-lg"
+    <div className="flex items-center gap-2 bg-white p-1 rounded-lg">
+      {isCalling ? (
+        <>
+          <ControlButton
+            onClick={handleMuteAudio}
+            icon={isAudioMuted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+            tooltip={isAudioMuted ? 'Unmute Audio' : 'Mute Audio'}
+            active={isAudioMuted}
           />
-        </Tooltip>
-          {isCalling && (
-            <>
-            <Tooltip title={isAudioMuted ? "Unmute Audio" : "Mute Audio"}>
-            <Button
-              shape="circle"
-              icon={isAudioMuted ? <AudioMutedOutlined /> : <AudioOutlined />}
-              onClick={handleMuteAudio}
-              style={{
-                backgroundColor: isAudioMuted ? "#ff6347" : "#1890ff",
-                borderColor: isAudioMuted ? "#ff6347" : "#1890ff",
-                color: "white",
-                transition: "background-color 0.3s, transform 0.2s, box-shadow 0.2s",
-                boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
-              }}
-              className="flex items-center justify-center hover:scale-105 active:scale-95 hover:shadow-lg"
-            />
-          </Tooltip>
-  
-          <Tooltip title={isVideoMuted ? "Unmute Video" : "Mute Video"}>
-            <Button
-              shape="circle"
-              icon={isVideoMuted ? <VideoCameraAddOutlined /> : <VideoCameraOutlined />}
-              onClick={handleMuteVideo}
-              style={{
-                backgroundColor: isVideoMuted ? "#ff6347" : "#1890ff",
-                borderColor: isVideoMuted ? "#ff6347" : "#1890ff",
-                color: "white",
-                transition: "background-color 0.3s, transform 0.2s, box-shadow 0.2s",
-                boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
-              }}
-              className="flex items-center justify-center hover:scale-105 active:scale-95 hover:shadow-lg"
-            />
-          </Tooltip>
-          </>
-          )}
-        
-
- 
-      </Space>
+          <ControlButton
+            onClick={handleMuteVideo}
+            icon={isVideoMuted ? <VideoOff className="w-5 h-5" /> : <Video className="w-5 h-5" />}
+            tooltip={isVideoMuted ? 'Enable Video' : 'Disable Video'}
+            active={isVideoMuted}
+          />
+          <ControlButton
+            onClick={endCall}
+            icon={<PhoneOff className="w-5 h-5" />}
+            tooltip="End Call"
+            active={true}
+          />
+        </>
+      ) : (
+        <ControlButton
+          onClick={startCall}
+          icon={<Phone className="w-5 h-5" />}
+          tooltip="Start Call"
+        />
+      )}
     </div>
   );
 };
-
-export default CallControls;

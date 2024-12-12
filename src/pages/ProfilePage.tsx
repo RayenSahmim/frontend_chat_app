@@ -29,6 +29,7 @@ const ProfilePage = () => {
       setImagePreview(URL.createObjectURL(event.target.files[0]));
     }
   };
+  console.log("id" , id)
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -219,7 +220,7 @@ const ProfilePage = () => {
                     </>
                   )}
                 </div>
-                <p className="text-gray-200 mt-1">{user?.email}</p>
+                <p className="text-gray-200 mt-1 break-words">{user?.email}</p>
               </div>
             </div>
           </div>
