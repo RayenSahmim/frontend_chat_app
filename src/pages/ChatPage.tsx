@@ -125,8 +125,7 @@ const ChatApp = ({ roomId  , OnlineUsers}: { roomId: string  , OnlineUsers: stri
     }
   };
 
-  console.log("userAudioStatuses:", userAudioStatuses);
-  console.log("userVideoStatuses:", userVideoStatuses);
+  console.log('Messages:', messages);
 
   return (
     <div className="relative flex flex-col h-full w-full">

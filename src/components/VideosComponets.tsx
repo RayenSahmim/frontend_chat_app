@@ -29,7 +29,7 @@ const VideosComponent: React.FC<VideosComponentProps> = ({
   localStream,
   remoteStream
 }) => {
-  const [layout, setLayout] = useState<LayoutType>('pip');
+  const [layout, setLayout] = useState<LayoutType>('grid');
   const classes = useLayoutClasses(layout);
 
   useEffect(() => {
