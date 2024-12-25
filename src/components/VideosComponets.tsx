@@ -9,8 +9,10 @@ interface VideosComponentProps {
   userId: string;
   localVideoRef: React.RefObject<HTMLVideoElement>;
   remoteVideoRef: React.RefObject<HTMLVideoElement>;
+  screenShareRef : React.RefObject<HTMLVideoElement> | null;
   isAudioMuted: boolean;
   isVideoMuted: boolean;
+  isScreenSharing: boolean;
   userAudioStatuses: Record<string, boolean>;
   userVideoStatuses: Record<string, boolean>;
   localStream: MediaStream | null;
@@ -22,8 +24,10 @@ const VideosComponent: React.FC<VideosComponentProps> = ({
   userId,
   localVideoRef,
   remoteVideoRef,
+  screenShareRef,
   isAudioMuted,
   isVideoMuted,
+  isScreenSharing,
   userAudioStatuses,
   userVideoStatuses,
   localStream,
@@ -31,7 +35,7 @@ const VideosComponent: React.FC<VideosComponentProps> = ({
 }) => {
   const [layout, setLayout] = useState<LayoutType>('grid');
   const classes = useLayoutClasses(layout);
-
+  console.log("userAudioStatuses : ", userAudioStatuses);
   useEffect(() => {
     if (localStream) {
       const audioTrack = localStream.getAudioTracks()[0];
@@ -51,6 +55,9 @@ const VideosComponent: React.FC<VideosComponentProps> = ({
     }
   }, [userAudioStatuses, userVideoStatuses, remoteStream, userId]);
 
+ 
+
+
   const localAudioMuted = isAudioMuted || userAudioStatuses[userId];
   const localVideoMuted = isVideoMuted || userVideoStatuses[userId];
   const remoteUserId = Object.keys(userAudioStatuses).find((id) => id !== userId);
@@ -58,10 +65,11 @@ const VideosComponent: React.FC<VideosComponentProps> = ({
   const remoteVideoMuted = userVideoStatuses[remoteUserId || ''];
 
   return (
-    <div className="relative w-full h-screen bg-[#36393f] overflow-hidden">
+    <div className="relative w-full h-[calc(100vh-64px)] md:h-[100vh-100px] bg-[#36393f] overflow-hidden">
       <LayoutControls currentLayout={layout} onLayoutChange={setLayout} />
       
-      <div className={classes.container}>
+      <div className={classes.container }>
+        
         <VideoContainer
           videoRef={remoteVideoRef}
           isVideoMuted={remoteVideoMuted}
@@ -70,14 +78,35 @@ const VideosComponent: React.FC<VideosComponentProps> = ({
           className={classes.remote}
         />
         
-        <VideoContainer
-          videoRef={localVideoRef}
-          isVideoMuted={localVideoMuted}
-          isAudioMuted={localAudioMuted}
-          username={username}
-          isLocal={true}
-          className={classes.local}
-        />
+        <div className='relative'>
+        {isScreenSharing  && screenShareRef && (
+            <VideoContainer
+              videoRef={screenShareRef}
+              isVideoMuted={false}
+              isAudioMuted={localAudioMuted}
+              username={`${username}'s Screen`}
+              className={classes.local}
+            />
+          )}
+          
+          {/* Local Video */}
+          {(!isScreenSharing || (isScreenSharing && layout === 'grid')) && (
+            <VideoContainer
+              videoRef={localVideoRef}
+              isVideoMuted={localVideoMuted}
+              isAudioMuted={localAudioMuted}
+              username={username}
+              isLocal={true}
+              className={`${classes.local} ${isScreenSharing ? 'w-1/4 absolute bottom-4 right-4' : ''}`}
+            />
+          )}
+        {isScreenSharing && (
+        <div className="absolute top-2 right-2 bg-blue-500 text-white px-2 py-1 rounded">
+          Sharing Screen
+        </div>
+      )}
+        </div>
+      
       </div>
     </div>
   );

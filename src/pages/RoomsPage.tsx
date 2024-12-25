@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { cn } from "../lib/utils";
 import { useOnlineUsers } from "../hooks/useOnlineUsers";
 import { useSocket } from "../Providers/SocketContext";
+import { useRoom } from "../Providers/RoomProvider";
 
 interface Room {
   _id: string;
@@ -25,7 +26,7 @@ const RoomsPage = () => {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchLoading, setSearchLoading] = useState(false);
-  const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
+  const { roomId:selectedRoomId , setRoomId:setSelectedRoomId } = useRoom();
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
   const [isMobileView, setIsMobileView] = useState(false);

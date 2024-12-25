@@ -12,6 +12,7 @@ export const useChatSocket = (roomId: string, username: string) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [typing, setTyping] = useState('');
   const [loading, setLoading] = useState(true);
+  
 
   useEffect(() => {
     if (!socket) return;

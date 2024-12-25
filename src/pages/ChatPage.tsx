@@ -1,20 +1,25 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { UserCircle2 } from 'lucide-react';
 import IncomingCallModal from '../components/IncomingCallModal';
 import useAuthenticatedUser from '../hooks/useAuthenticatedUser';
 import useFriendData from '../hooks/useFriendData';
 
 import { useChatSocket } from '../hooks/useChatSocket';
-import { useVideoCall } from '../hooks/useVideoCall';
 import NavbarControlls from '../components/NavbarControls';
 import VideosComponent from '../components/VideosComponets';
 import { MessageList } from '../components/MessageList';
 import { ChatInput } from '../components/ChatInput';
+import { useCallContext } from '../Providers/CallProvider';
+import { CallControls } from '../components/CallControls';
 
 const ChatApp = ({ roomId  , OnlineUsers}: { roomId: string  , OnlineUsers: string[] }) => {
   const [message, setMessage] = useState('');
-  const localVideoRef = React.useRef<HTMLVideoElement>(null);
-  const remoteVideoRef = React.useRef<HTMLVideoElement>(null);
+  const localVideoRef = useRef<HTMLVideoElement>(null);
+  const remoteVideoRef = useRef<HTMLVideoElement>(null);
+  const screenShareRef = useRef<HTMLVideoElement>(null);
+
+
+  
 
 
 
@@ -35,6 +40,7 @@ const ChatApp = ({ roomId  , OnlineUsers}: { roomId: string  , OnlineUsers: stri
   const {
     isCalling,
     isRinging,
+    isScreenSharing,
     callerName,
     remoteStream,
     localStream,
@@ -42,13 +48,16 @@ const ChatApp = ({ roomId  , OnlineUsers}: { roomId: string  , OnlineUsers: stri
     isVideoMuted,
     userAudioStatuses,
     userVideoStatuses,
+    localDisplayStream,
+    startScreenShare,
+    stopScreenShare,
     startCall,
     acceptCall,
     declineCall,
     endCall,
     handleMuteAudio,
     handleMuteVideo,
-  } = useVideoCall(roomId);
+  } = useCallContext();
 
 
   
@@ -97,6 +106,12 @@ const ChatApp = ({ roomId  , OnlineUsers}: { roomId: string  , OnlineUsers: stri
 
 
   const isOnline = friend && OnlineUsers.includes(friend._id);
+
+  useEffect(() => {
+    if (screenShareRef?.current && localDisplayStream) {
+      screenShareRef.current.srcObject = localDisplayStream;
+    }
+  }, [localDisplayStream, screenShareRef]);
 
   if (userLoading || friendLoading) {
     return (
@@ -155,29 +170,40 @@ const ChatApp = ({ roomId  , OnlineUsers}: { roomId: string  , OnlineUsers: stri
                 <NavbarControlls
                   isCalling={isCalling}
                   startCall={startCall}
-                  endCall={endCall}
-                  handleMuteAudio={() => handleMuteAudio(authenticatedUser?.id || '')}
-                  handleMuteVideo={() => handleMuteVideo(authenticatedUser?.id || '')}
-                  isAudioMuted={isAudioMuted}
-                  isVideoMuted={isVideoMuted}
+                  
                 />
               </div>
             </header>
 
             <div className="flex-1 flex flex-col min-h-0 relative">
               {isCalling ? (
+                <div className='flex flex-col'>
                 <VideosComponent
                   username={authenticatedUser?.name || ''}
                   userId={authenticatedUser?.id || ''}
                   localVideoRef={localVideoRef}
                   remoteVideoRef={remoteVideoRef}
+                  screenShareRef={screenShareRef}
                   isAudioMuted={isAudioMuted}
                   isVideoMuted={isVideoMuted}
+                  isScreenSharing={isScreenSharing}
                   userAudioStatuses={userAudioStatuses}
                   userVideoStatuses={userVideoStatuses}
                   localStream={localStream}
                   remoteStream={remoteStream}
                 />
+                <CallControls
+                isCalling={isCalling}
+                isScreenSharing={isScreenSharing}
+                endCall={endCall}
+                startScreenShare={startScreenShare}
+                stopScreenShare={stopScreenShare}
+                handleMuteAudio={handleMuteAudio}
+                handleMuteVideo={handleMuteVideo}
+                isAudioMuted={isAudioMuted}
+                isVideoMuted={isVideoMuted}
+                />
+                </div>
               ) : (
                 <>
                   <MessageList
